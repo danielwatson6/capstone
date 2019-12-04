@@ -1,0 +1,26 @@
+# python
+*.py[cod]
+__pycache__/
+
+# virtualenv
+env/
+
+# ide
+*.sublime-project
+*.sublime-workspace
+*.swp
+
+# latex
+*.pdf
+*.aux
+*.log
+*.out
+*.bbl
+*.blg
+*.fls
+*.synctex.gz
+*.fdb_latexmk
+
+# os
+Icon?
+.DS_Store
