@@ -1,0 +1,210 @@
+\documentclass{NSF}
+
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{MnSymbol}
+\usepackage[round]{natbib}
+
+% Underline
+\usepackage{soul}
+
+% Custom macros
+\newcommand{\E} {
+    \mathop{\mathbb{E}}
+}
+\newcommand{\DKL} {
+    D_{\mathrm{KL}}
+}
+
+\graphicspath{{figures/}}
+
+\begin{document}`
+\title{Learning Black-Box Distributions With Fixed Information-Theoretic Properties}
+\newsection{Project Report}
+\section{Daniel Watson}
+
+\begin{abstract}
+While deep learning research has made incredible progress over the last few years,
+neural networks remain very sensitive to the data they are trained on, and there is
+a very limited understanding of model behavior with respect to mathematical properties
+of the data. In this paper, we develop a methodology to generate synthetic datasets with
+a desired amount of entropy, and we show that this method can be used to generate
+synthetic labels for any input distribution such that the mutual information between the
+inputs and the generated labels is also controlled.
+
+\end{abstract}
+
+\subsection{Introduction}
+Deep learning \citep{lecun2015deep} has seen a progress explosion in recent years,
+achieving state-of-the-art performance in a myriad of machine learning tasks.
+
+
+\subsection{Objectives}
+
+
+\subsection{Approach}
+Given some data distribution $P_X$ on an input sample space $\Omega_X$ and a continuous
+\textit{output sample space} $\Omega_Y$, our goal is to learn a neural network
+$f_\theta: \Omega_X \rightarrow \Omega_Y$ such that, if $X$ is a random variable
+with law $P_X$ and $Y=f_\theta(X)$ with law $P_Y$, then either (i) the \textit{entropy}
+$\mathbb{H}[Y]$ or (ii) the \textit{mutual information} $\mathbb{I}[X,Y]$ is fixed
+to a given $\alpha \in \mathbb{R}$.
+\\
+\\
+In general, both the marginal and conditional densities $p_Y(y),p_{Y|X}(y|x)$ of $Y$ are
+intractable. However, introducing specific assumptions on the source of stochasticity in
+$f_\theta$ can relieve this problem. The framework used by \cite{hjelm2018learning}, for
+example, uses a deterministic $f_\theta$. While their methodology allows estimating
+$\mathbb{I}[X,Y]$ without requiring this assumption, it fails to exploit it. This is
+possible with a few key observations.
+\\
+\\
+\textbf{Proposition 1.} If $f_\theta$ is determistic and $P_Y \ll \lambda^n$, then
+\[
+    \mathbb{H}[Y]
+    = -\E_{x\sim P_X}\left[\log \left(p_Y(f_\theta(x)\right))\right]
+\]
+where $n=\dim \Omega_Y$ and $\lambda^n$ is the Lebesgue measure on $\mathbb{R}^n$.
+\\
+\\
+\textbf{Proof.} By construction, $P_Y$ is the pushforward
+measure $P_X \circ f_\theta^{-1}$. Moreover, the marginal density $p_Y(y)$ exists and is
+unique $\lambda^n$-almost-everywhere, so it follows that
+\[
+    \mathbb{H}[Y]
+    = -\int_{\Omega_Y} \log p_Y(y) d(P_X \circ f_\theta^{-1})
+    = -\int_{\Omega_X} \log p_Y(f_\theta(x)) d(P_X)
+    = -\E_{x\sim P_X}\left[\log \left(p_Y(f_\theta(x)\right))\right].
+    \quad\blacksquare
+\]
+In the deterministic case, as long as the neural network is "smooth" accross all output
+dimensions, the marginal $p_Y(y)$ is well-behaved. However, the conditional distribution
+$P_{Y|X}$ is a point mass, where the probability of the point $f_\theta(x)$ is 1 and the
+probability of any other point is 0, so the conditional density $p_{Y|X}$ blows up to
+infinity at $f_\theta(x)$ and hence is not well-defined.
+\\
+\\
+To ensure that the entropy and mutual information are well defined in this framework, a
+few modifications are sufficient:
+\begin{enumerate}
+\item Let $\Omega_Y$ be a \textit{topologically compact} space. This ensures $\Omega_Y$
+is bounded and not homeomorphic to an unbounded space, ensuring that the maximum entropy
+of $Y$ is finite.
+\item Let $\epsilon$ be a random variable in $\Omega_Y$, independent to $X$ and with a
+tractable density $p_\epsilon(y)$ (so $P_\epsilon \ll \lambda^n$). Then define
+$Y' = f_\theta(X)$ and $Y = Y' + \epsilon$. This ensures that the conditional density
+$p_{Y|X}$ is well-behaved and restricted to finite values.
+\end{enumerate}
+These modifications to the problem setup lead to the following key result:
+\\
+\\
+\textbf{Proposition 2.} If $f_\theta$ is determistic and $P_{Y'} \ll \lambda^n$, then
+\[
+    \mathbb{I}[X,Y]
+    = \mathbb{H}[Y] - \mathbb{H}[\epsilon]
+\]
+\textbf{Proof.} Since $Y'$ and $\epsilon$ are independent, the conditional density
+$p_{Y|X}$ is the convolution of the densities of $\epsilon$ and the constant random
+variable $Y'$ (given $X$), i.e., $p_{Y|X}(y|x) = p_\epsilon(y - f_\theta(x))$. Thus,
+\begin{align*}
+    \mathbb{I}[X,Y]
+    &= \E_{x\sim P_X} \E_{\epsilon \sim P_\epsilon} \left[
+       \log p_{Y|X}(f_\theta(x) + \epsilon|x) - \log p_Y(f_\theta(x) + \epsilon) \right]
+    \\
+    &= \E_{x\sim P_X} \E_{\epsilon \sim P_\epsilon}
+       \left[ \log p_\epsilon(f_\theta(x) + \epsilon - f_\theta(x)) \right]
+       - \E_{y\sim P_Y} \left[ \log p_Y(y) \right]
+    \\
+    &= \E_{\epsilon \sim P_\epsilon} \left[ \log p_\epsilon(\epsilon) \right]
+       + \mathbb{H}[Y]
+    \\
+    &= \mathbb{H}[Y] - \mathbb{H}[\epsilon].
+    \quad\blacksquare
+\end{align*}
+This result shows that, \ul{when the stochasticity of $Y|X$ not coming from $X$
+is not part of $f_\theta$, the mutual information $\mathbb{I}[X,Y]$ is just the marginal
+entropy $\mathbb{H}[Y]$ up to an additive constant}. This suggests the following
+approaches to learn $\theta$ such that the mutual information is fixed to a given
+$\alpha \in [0,\infty)$, both only relying on the ability to estimate $\mathbb{H}[Y]$:
+\begin{enumerate}
+\item It suffices to minimize
+$\left(\hat{\mathbb{H}}[Y] - \mathbb{H}[\epsilon] - \alpha\right)^2$
+\item It sufices to maximize $\hat{\mathbb{H}}[Y]$ and setting $P_\epsilon$ to a
+distribution such that $\mathbb{H}[\epsilon] = \mathbb{H}[U] - \alpha$, where $U$ is a
+uniform distribution over $\Omega_Y$.
+\end{enumerate}
+Under this framework, the expression for the marginal entropy $\mathbb{H}[Y]$ changes
+slightly:
+\\
+\\
+\textbf{Proposition 1 (generalized).} If $f_\theta$ is determistic and
+$P_{Y'} \ll \lambda^n$, then
+\[
+    \mathbb{H}[Y]
+    = - \E_{x\sim P_X} \E_{\epsilon\sim P_\epsilon} \left[ \log \left(
+    \E_{\epsilon'\sim P_\epsilon} p_{Y'}(f_\theta(x) + \epsilon - \epsilon')
+    \right) \right]
+    = - \E_{x\sim P_X} \E_{\epsilon\sim P_\epsilon} \left[ \log \left(
+      \E_{x' \sim P_X} p_\epsilon(\epsilon + f_\theta(x) - f_\theta(x')
+      \right) \right]
+\]
+\textbf{Proof.} Using the convolution formula and that
+$\E_{y\sim P_Y} g(y) = \E_{x\sim P_X} \E_{\epsilon \sim P_\epsilon} g(f_\theta(x)+\epsilon)$ for any measurable $g: \Omega_Y \rightarrow [0, \infty)$, the marginal $p_Y$
+can be written as follows:
+\[
+    p_Y(y)
+    = \E_{\epsilon'\sim P_\epsilon} p_{Y'}(y-\epsilon')
+    = \E_{x' \sim P_X} p_\epsilon(y - f_\theta(x'))
+\]
+Substituting $p_Y(y)$ for these terms in the entropy yields both results.
+$\quad\blacksquare$
+\\
+\\
+This suggests three different routes to estimate the entropy $\mathbb{H}[Y]$:
+\begin{enumerate}
+\item Use a $P_\epsilon$ such that the density $p_\epsilon$ is differentiable to directly
+estimate $p_Y$
+optimize the main objective, following Proposition 1.
+\item Estimate $p_Y$ with a discriminator-based approach, and use the
+approximation in place of $p_Y$, disregarding Proposition 1.
+\item Estimate $p_{Y'}$ with a discriminator-based approach, and use the
+approximation in place of $p_{Y'}$, following Proposition 1.
+\end{enumerate}
+
+\subsubsection{Evaluation}
+
+For each of the three approaches, two main sources of error exist, one being the
+difference between the target and achieved mutual information, and the other being the
+quality of the density estimate $\hat{p}_\psi$. The former can be evaluated by any
+metric like the mean absolute error, while the latter can be evaluated via the
+cross-entropy, since
+\[
+    \arg\min_\psi \DKL \left[P_{(\cdot)} \| \hat{P}\right]
+    = \arg\max_\psi \E_{y\sim P(\cdot)} \log \hat{p}_\psi(y)
+\]
+For the third approach involving the estimation of $p_{Y'}$, cross-entropy may be used to
+evaluate the quality of both $\hat{p}_{Y'}$ and
+$\hat{p}_Y(y) = \E_{\epsilon'\sim P_\epsilon} \hat{p}_{Y'}(y-\epsilon')$.
+
+\subsection{Background and Related Work}
+
+
+
+\subsection{Hypotheses}
+asd
+
+
+\subsection{Experiments}
+asd
+
+
+\subsection{Summary and Potential Impact}
+asd
+
+
+\newpage
+\renewcommand\refname{References}
+\bibliography{references.bib}
+\bibliographystyle{plainnat}
+
+\end{document}
