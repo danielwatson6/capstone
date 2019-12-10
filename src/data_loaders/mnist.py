@@ -13,10 +13,10 @@ class MNIST(tfbp.DataLoader):
         test_data = tf.data.Dataset.from_tensor_slices(test_data)
         test_data = self._transform_dataset(test_data)
 
-        if self.method in ["fit", "train"]:
+        if self.method == "train":
             train_data = tf.data.Dataset.from_tensor_slices(train_data)
             train_data = self._transform_dataset(train_data)
-            return train_data, test_data
+            return train_data, iter(test_data.repeat())
 
         return test_data
 

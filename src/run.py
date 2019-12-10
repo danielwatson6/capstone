@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 import json
+import inspect
 import os
 import sys
 
@@ -95,4 +96,10 @@ if __name__ == "__main__":
         with open(os.path.join("experiments", FLAGS.save_dir, "runpy.json"), "w") as f:
             json.dump({"model": FLAGS.model, "data_loader": FLAGS.data_loader}, f)
 
-    getattr(model, FLAGS.method)(data_loader)
+    if FLAGS.method not in Model._methods:
+        methods_str = "  \n".join(Model._methods.keys())
+        raise ValueError(
+            f"Model does not have a runnable method `{FLAGS.method}`. Methods available:"
+            f"\n  {methods_str}"
+        )
+    Model._methods[FLAGS.method](model, data_loader)

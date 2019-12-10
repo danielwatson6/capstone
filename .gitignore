@@ -2,6 +2,10 @@
 *.py[cod]
 __pycache__/
 
+# tfbp
+data/
+experiments/
+
 # virtualenv
 env/
 
