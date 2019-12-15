@@ -4,6 +4,7 @@
 \usepackage{amsmath}
 \usepackage{MnSymbol}
 \usepackage[round]{natbib}
+\usepackage{xcolor}
 
 % Underline
 \usepackage{soul}
@@ -19,86 +20,121 @@
 \graphicspath{{figures/}}
 
 \begin{document}`
-\title{Learning Black-Box Distributions With Fixed Information-Theoretic Properties}
+\title{SLARE: Synthetic-Label-Based Regressor Evaluation}
 \newsection{Project Report}
 \section{Daniel Watson}
 
 \begin{abstract}
-While deep learning research has made incredible progress over the last few years,
+While deep learning research has made significant progress over the last few years,
 neural networks remain very sensitive to the data they are trained on, and there is
 a very limited understanding of model behavior with respect to mathematical properties
-of the data. In this paper, we develop a methodology to generate synthetic datasets with
-a desired amount of entropy, and we show that this method can be used to generate
-synthetic labels for any input distribution such that the mutual information between the
-inputs and the generated labels is also controlled.
+of the data. In this paper, we develop SLARE, a method to generate synthetic continuous
+labels for any input distribution such that the mutual information between the inputs
+and the generated labels is fixed to a desired amount. We develop an approach to
+estimate the entropy of a neural network's black-box output, and subsequently show that
+this estimate can be used to estimate and fix the mutual information between the neural
+network's inputs and outputs. We propose the use of SLARE to study supervised models in
+function of the mutual information between the inputs and the labels of the data, and
+demonstrate one such study on a simple feedforward neural network, noting how the
+behavior of different, existing regularization techniques varies with respect to the
+mutual information in the data. \textcolor{red}{Conclusion summary.}
 
 \end{abstract}
 
-\subsection{Introduction}
+\subsection{1. Introduction}
 Deep learning \citep{lecun2015deep} has seen a progress explosion in recent years,
-achieving state-of-the-art performance in a myriad of machine learning tasks.
+achieving state-of-the-art performance in a myriad of machine learning tasks. Much of
+this success is understood from the expressiveness of neural networks, which have been
+shown to be able to approximate any continuous multivariate function with arbitrarily
+small error in the nonparametric limit
+\citep{cybenko1989approximation,hornik1991approximation}. Despite this, neural networks
+suffer from several fundamental problems in machine learning, including their tendency to
+overfit to the training data \citep{lawrence1997lessons} and to be very sensitive to
+changes in both the inputs and hyperparameters \citep{novak2018sensitivity}.
+\\
+\\
+While some recent work has begun to shed light on model behavior with respect to some
+hyperparameters \citep{jastrzkebski2017three} more rigorously, this remains a difficult,
+open problem in the field. The same can be said about understanding model behavior with
+respect to properties of the input data distribution, where recent work has instead shown
+the ability of neural networks to overfit to completely random labels
+\citep{zhang2016understanding}, even with regularization techniques being applied.
+\cite{zhang2016understanding} also investigate the overfitting tendency of
+pre-determined models by partially corrupting the labels by sampling them from a uniform
+distribution with a probability $p$ varied per experiment.
+\\
+\\
+In this paper, we investigate this problem in the context of continuous labels (i.e.,
+supervised regression tasks). Rather than empirically corrupting the labels, however, we
+opt for learning labels synthetically such that the mutual information between the inputs
+and the labels is fixed to a desired number of nats, in order to evaluate a regression
+model's ability to fit to labels as they become increasingly decorrelated to the inputs.
+We propose our methodology, SLARE (Synthetic-Label-Based Regressor Evaluation), as a
+useful way to develop and study regularizers in regression models; specifically, their
+ability to prevent overfitting and their optimality based on mutual information, which
+enables comparison between different input distributions.
 
+\subsection{2. Objectives}
 
-\subsection{Objectives}
+Given the well-established sensitivity of neural networks to the input distribution and
+the crucial importance of avoiding overfitting in any task, the ability to make modeling
+decisions (in particular, how to regularize a model) based on quantifiable properties of
+the data rather than on the particular dataset itself would be massively benefitial to
+the field. Such decisions could be made through understanding as opposed to the usual,
+empirical trial-and-error, and could increase productivity on the model development
+process. Moreover, research efforts to develop novel regularization methods could use
+SLARE to study their methods under varying circumstances relevant to overfitting (i.e.,
+mutual information), rather than just on a handful of arbitrary datasets.
+\\
+\\
+Besides the development of SLARE and creating an initial survey on regularization
+techniques in continuous label settings, this paper also aims to quantify the reliability
+of mutual information as an indicator of model effectiveness under different input
+distributions. In other words, given that the mutual information between the inputs and
+the labels is equal in different datasets, we investigate how similar are the results
+obtained for the particular model being evaluated in each of the datasets. The higher
+this similarity, the stronger and general the conclusions drawn from model behavior under
+particular mutual information values.
 
-
-\subsection{Approach}
-Given some data distribution $P_X$ on an input sample space $\Omega_X$ and a continuous
-\textit{output sample space} $\Omega_Y$, our goal is to learn a neural network
+\subsection{3. Approach}
+Given some data distribution $P_X$ on an input sample space $\Omega_X \subseteq \mathbb{R}^m$ and a continuous
+output sample space $\Omega_Y \subseteq \mathbb{R}^n$ with $m > n$, one way to formalize the problem of generating labels with fixed mutual information is as follows: we seek to to learn a neural network
 $f_\theta: \Omega_X \rightarrow \Omega_Y$ such that, if $X$ is a random variable
-with law $P_X$ and $Y=f_\theta(X)$ with law $P_Y$, then either (i) the \textit{entropy}
-$\mathbb{H}[Y]$ or (ii) the \textit{mutual information} $\mathbb{I}[X,Y]$ is fixed
-to a given $\alpha \in \mathbb{R}$.
+with law $P_X$ and $Y=f_\theta(X)$ with law $P_Y$, then the \textit{mutual information}
+$\mathbb{I}[X,Y]$ is fixed to a given $\alpha$ amount of nats, where
+$\alpha\in [0,\infty)$.
 \\
 \\
+This objective comes with several difficulties.
 In general, both the marginal and conditional densities $p_Y(y),p_{Y|X}(y|x)$ of $Y$ are
 intractable. However, introducing specific assumptions on the source of stochasticity in
-$f_\theta$ can relieve this problem. The framework used by \cite{hjelm2018learning}, for
-example, uses a deterministic $f_\theta$. While their methodology allows estimating
-$\mathbb{I}[X,Y]$ without requiring this assumption, it fails to exploit it. This is
-possible with a few key observations.
+$f_\theta$ can relieve this problem. The framework used by \cite{hjelm2018learning} for
+learning representations with maximal mutual information, for
+example, uses this setup with a deterministic $f_\theta$. Their methodology allows estimating
+$\mathbb{I}[X,Y]$ without requiring this determinism assumption, though it fails to exploit it and also ignores the fact that without any source of stochasticity besides that of the input distribution, the problem is actually ill-defined.
 \\
 \\
-\textbf{Proposition 1.} If $f_\theta$ is determistic and $P_Y \ll \lambda^n$, then
-\[
-    \mathbb{H}[Y]
-    = -\E_{x\sim P_X}\left[\log \left(p_Y(f_\theta(x)\right))\right]
-\]
-where $n=\dim \Omega_Y$ and $\lambda^n$ is the Lebesgue measure on $\mathbb{R}^n$.
-\\
-\\
-\textbf{Proof.} By construction, $P_Y$ is the pushforward
-measure $P_X \circ f_\theta^{-1}$. Moreover, the marginal density $p_Y(y)$ exists and is
-unique $\lambda^n$-almost-everywhere, so it follows that
-\[
-    \mathbb{H}[Y]
-    = -\int_{\Omega_Y} \log p_Y(y) d(P_X \circ f_\theta^{-1})
-    = -\int_{\Omega_X} \log p_Y(f_\theta(x)) d(P_X)
-    = -\E_{x\sim P_X}\left[\log \left(p_Y(f_\theta(x)\right))\right].
-    \quad\blacksquare
-\]
 In the deterministic case, as long as the neural network is "smooth" accross all output
-dimensions, the marginal $p_Y(y)$ is well-behaved. However, the conditional distribution
+dimensions, the marginal $p_Y(y)$ is well-defined (i.e., $P_Y \ll \lambda^n$ where $\lambda^n$ is the Lebesgue measure on $\Omega_Y$). However, the conditional distribution
 $P_{Y|X}$ is a point mass, where the probability of the point $f_\theta(x)$ is 1 and the
 probability of any other point is 0, so the conditional density $p_{Y|X}$ blows up to
-infinity at $f_\theta(x)$ and hence is not well-defined.
-\\
-\\
-To ensure that the entropy and mutual information are well defined in this framework, a
-few modifications are sufficient:
+infinity at $f_\theta(x)$ and hence is not well-defined. While prior work on mutual
+information estimation and maximization has not made use of the conditional density
+explicitly, the conditional distribution does not satisfy $P_{Y|X} \ll \lambda^n$ nor
+$\lambda^n \ll P_{Y|X}$, which is required to define the KL divergence, making the mutual information and hence the entire problem ill-defined. We propose the following
+modifications to the proposed framework to circumvent this problem:
 \begin{enumerate}
+\item Let $\epsilon$ be a random variable independent to $X$ and with a tractable
+density $p_\epsilon(y)$ (so $P_\epsilon \ll \lambda^n$). Then define $Y' = f_\theta(X)$
+and $Y = Y' + \epsilon$. This ensures that the conditional density $p_{Y|X}$ is
+well-behaved and restricted to finite values.
 \item Let $\Omega_Y$ be a \textit{topologically compact} space. This ensures $\Omega_Y$
-is bounded and not homeomorphic to an unbounded space, ensuring that the maximum entropy
-of $Y$ is finite.
-\item Let $\epsilon$ be a random variable in $\Omega_Y$, independent to $X$ and with a
-tractable density $p_\epsilon(y)$ (so $P_\epsilon \ll \lambda^n$). Then define
-$Y' = f_\theta(X)$ and $Y = Y' + \epsilon$. This ensures that the conditional density
-$p_{Y|X}$ is well-behaved and restricted to finite values.
+is bounded and not homeomorphic to an unbounded space. This will be important to show that the entropy $\mathbb{H}[Y]$ is bounded, which will quickly become relevant.
 \end{enumerate}
 These modifications to the problem setup lead to the following key result:
 \\
 \\
-\textbf{Proposition 2.} If $f_\theta$ is determistic and $P_{Y'} \ll \lambda^n$, then
+\textbf{Proposition 1.} If $f_\theta$ is determistic and $P_{Y'} \ll \lambda^n$, then
 \[
     \mathbb{I}[X,Y]
     = \mathbb{H}[Y] - \mathbb{H}[\epsilon]
@@ -128,79 +164,261 @@ approaches to learn $\theta$ such that the mutual information is fixed to a give
 $\alpha \in [0,\infty)$, both only relying on the ability to estimate $\mathbb{H}[Y]$:
 \begin{enumerate}
 \item It suffices to minimize
-$\left(\hat{\mathbb{H}}[Y] - \mathbb{H}[\epsilon] - \alpha\right)^2$
+$\left(\hat{\mathbb{H}}[Y] - \mathbb{H}[\epsilon] - \alpha\right)^2$.
 \item It sufices to maximize $\hat{\mathbb{H}}[Y]$ and setting $P_\epsilon$ to a
 distribution such that $\mathbb{H}[\epsilon] = \mathbb{H}[U] - \alpha$, where $U$ is a
 uniform distribution over $\Omega_Y$.
 \end{enumerate}
-Under this framework, the expression for the marginal entropy $\mathbb{H}[Y]$ changes
-slightly:
+Under this framework, it is also possible to obtain an expression for the marginal entropy $\mathbb{H}[Y]$:
 \\
 \\
-\textbf{Proposition 1 (generalized).} If $f_\theta$ is determistic and
+\textbf{Proposition 2.} If $f_\theta$ is determistic and
 $P_{Y'} \ll \lambda^n$, then
 \[
     \mathbb{H}[Y]
     = - \E_{x\sim P_X} \E_{\epsilon\sim P_\epsilon} \left[ \log \left(
-    \E_{\epsilon'\sim P_\epsilon} p_{Y'}(f_\theta(x) + \epsilon - \epsilon')
-    \right) \right]
-    = - \E_{x\sim P_X} \E_{\epsilon\sim P_\epsilon} \left[ \log \left(
       \E_{x' \sim P_X} p_\epsilon(\epsilon + f_\theta(x) - f_\theta(x')
       \right) \right]
 \]
-\textbf{Proof.} Using the convolution formula and that
-$\E_{y\sim P_Y} g(y) = \E_{x\sim P_X} \E_{\epsilon \sim P_\epsilon} g(f_\theta(x)+\epsilon)$ for any measurable $g: \Omega_Y \rightarrow [0, \infty)$, the marginal $p_Y$
-can be written as follows:
+\textbf{Proof.} By construction, $P_Y$ is the convolution pushforward
+measure $P_X \circ f_\theta^{-1}$ and $P_\epsilon$. Thus, for any measurable
+$g: \Omega_Y \rightarrow [0, \infty)$,
 \[
-    p_Y(y)
-    = \E_{\epsilon'\sim P_\epsilon} p_{Y'}(y-\epsilon')
-    = \E_{x' \sim P_X} p_\epsilon(y - f_\theta(x'))
+  \E_{y\sim P_Y} g(y) = \E_{x\sim P_X} \E_{\epsilon \sim P_\epsilon} g(f_\theta(x)+\epsilon).
 \]
-Substituting $p_Y(y)$ for these terms in the entropy yields both results.
+We can therefore use this to write the marginal $p_Y$ as follows:
+\[
+    p_Y(y) = \E_{x' \sim P_X} p_\epsilon(y - f_\theta(x'))
+\]
+Substituting $p_Y(y)$ with the above term in the entropy yields the result.
 $\quad\blacksquare$
 \\
 \\
-This suggests three different routes to estimate the entropy $\mathbb{H}[Y]$:
+This suggests two different approaches to estimate the entropy $\mathbb{H}[Y]$:
 \begin{enumerate}
-\item Use a $P_\epsilon$ such that the density $p_\epsilon$ is differentiable to directly
-estimate $p_Y$
-optimize the main objective, following Proposition 1.
-\item Estimate $p_Y$ with a discriminator-based approach, and use the
-approximation in place of $p_Y$, disregarding Proposition 1.
-\item Estimate $p_{Y'}$ with a discriminator-based approach, and use the
-approximation in place of $p_{Y'}$, following Proposition 1.
+\item SLARE-Direct: Use a $P_\epsilon$ such that the density $p_\epsilon$ is
+differentiable and nonzero in $\mathbb{R}^n$ to directly estimate $p_Y$ and optimize the
+main objective, following Proposition 2.
+\item SLARE-Disc: Estimate $p_Y$ with a discriminator-based approach, and use the
+approximation in place of $p_Y$, disregarding Proposition 2.
 \end{enumerate}
 
-\subsubsection{Evaluation}
+\subsubsection{3.2 SLARE-Disc}
+
+To estimate $p_Y$, it is possible to train a discriminator
+$T_\psi$ with domain $\mathbb{R}^n$ whose objective is to distinguish samples from
+the marginal $P_Y$ and samples from a noise distribution $U$ over $\mathbb{R}^n$ with a tractable density $u$.
+Depending on the choice of discriminator and the global maximum of the objective which encodes the density ratio $\frac{p_Y}{u}$, it is
+possible to define $\hat{p}_Y(y)$ as some transformation of $T_\psi(y)$ and $u(y)$. For
+example:
+\begin{enumerate}
+\item The Donsker-Varadhan representation \citep{donsker1975asymptotic} allows us to write the KL divergence as
+\[
+  \DKL[P_Y \| U] \geq \sup_{T_\psi: \mathbb{R}^n \rightarrow (0,\infty)} \left[
+    \E_{y\sim P_Y} \log T_\psi(y) - \log\left(\E_{y\sim U} \log T_\psi(y)\right)
+  \right]
+\]
+where the bound is tight at $T_\psi = \frac{p_Y}{u}$, so $\hat{p}_Y(y) = T_\psi(y) u(y)$. Using this estimate, however, leads to biased gradient estimates when using stochastic minibatches during optimization.
+\item The f-divergence discriminator as used in MINE \citep{belghazi2018mine}
+\[
+  \DKL[P_Y \| U] \geq \sup_{T_\psi: \mathbb{R}^n \rightarrow (0,\infty)} \left[
+    \E_{y\sim P_Y} \log T_\psi(y) - \frac{1}{e}\E_{y\sim U} T_\psi(y)
+  \right]
+\]
+also leads to the estimate $\hat{p}_Y(y) = T_\psi(y) u(y)$. The Donsker-Varadhan estimate is
+strictly tighter, but the f-divergence estimate leads to unbiased gradient estimates.
+\item The discriminator objective used in generative adversarial networks \citep{goodfellow2014generative}
+\[
+  \sup_{T_\psi: \mathbb{R}^n \rightarrow (0,1)} \left[
+    \E_{y\sim P_Y} \log T_\psi(y) + \E_{y\sim U} \log (1 - T_\psi(y))
+  \right]
+\]
+related to the Jensen-Shannon divergence converges to $\frac{p_Y}{p_Y + u}$, so $\hat{p}_Y(y) = \frac{T_\psi(y)}{1-T_\psi(y)}$, also admits unbiased gradient estimates, and does not require $u$ to be tractable nor differentiable.
+\end{enumerate}
+All of these discriminator choices lead to the same strategy to train SLARE: optimizing the discriminator $T_\psi$ with respect to $\psi$, then the main objective replacing $p_Y$ with the approximate density $\hat{p}_Y$, iteratively until convergence. Sampling from
+$P_Y$ can be done as stated in the proof of Proposition 2, i.e., sampling $x\sim P_X$,
+$\epsilon\sim P_\epsilon$, and setting $y=f_\theta(x)+\epsilon$.
+
+\subsubsection{3.3 SLARE-Direct}
+
+As noted above, it is necessary to ensure that $p_\epsilon$ is
+nonzero in all of $\mathbb{R}^n$; otherwise the entropy $\mathbb{H}[Y]$ may be
+ill-defined due to taking the logarithm of 0. Moreover, this distribution must have a
+tractable and differentiable density in order to maximize the objective with gradient ascent.
+\\
+\\
+\textbf{Conjecture 3.} Let $P_\epsilon$ be a fixed distribution with support $\mathbb{R}^n$ with a differentiable nonzero density $p_\epsilon$ and finite entropy. Then $\mathbb{H}[Y]$ is bounded.
+\\
+\\
+\textbf{Proof.} \textcolor{red}{work in progress.}
+
+\subsubsection{3.4 Stochastic Gradient Bias Correction}
+
+Using either the Donsker-Varadhan discriminator in SLARE-Disc or SLARE-Direct will lead to biased minibatch-based gradient estimates \citep{belghazi2018mine}. \textcolor{red}{Work in progress: approach and to address this.}
+
+\subsubsection{3.5 Evaluation}
 
 For each of the three approaches, two main sources of error exist, one being the
 difference between the target and achieved mutual information, and the other being the
-quality of the density estimate $\hat{p}_\psi$. The former can be evaluated by any
-metric like the mean absolute error, while the latter can be evaluated via the
-cross-entropy, since
+quality of the density estimate $\hat{p}_Y$. The former can be evaluated by any metric
+(we opt for the absolute value of the difference between the estimated mutual
+information on a heldout set and the target mutual information $\alpha$), while the
+latter can be evaluated via the cross-entropy, since
 \[
-    \arg\min_\psi \DKL \left[P_{(\cdot)} \| \hat{P}\right]
-    = \arg\max_\psi \E_{y\sim P(\cdot)} \log \hat{p}_\psi(y)
+    \arg\min_{\hat{P}_Y} \DKL \left[P_Y \| \hat{P}_Y\right]
+    = \arg\max_{\hat{P}_Y} \E_{y\sim P_Y} \log \hat{p}_Y(y)
 \]
-For the third approach involving the estimation of $p_{Y'}$, cross-entropy may be used to
-evaluate the quality of both $\hat{p}_{Y'}$ and
-$\hat{p}_Y(y) = \E_{\epsilon'\sim P_\epsilon} \hat{p}_{Y'}(y-\epsilon')$.
+and this is compatible with our ability to sample from $P_Y$ and evaluate the
+approximation $\hat{p}_Y$.
+\\
+\\
+As a baseline, we utilize the mutual information neural estimate (MINE; \cite{belghazi2018mine}) since it allows to estimate the mutual information directly, as
+opposed to other mutual information maximization techniques \citep{hjelm2018learning}.
+We use MINE on the same objective functions described above, but report on two approaches
+to estimating the mutual information:
+\begin{enumerate}
+\item MINE: following the original MINE paper, we compute the Donsker-Varadhan lower bound of
+the mutual information, i.e.,
+\[
+    \hat{\mathbb{I}}[X,Y]
+    = \E_{x\sim P_X} \E_{\epsilon\sim P_\epsilon} \left[
+        \log T_\psi(x,f_\theta(x)+\epsilon)
+      \right]
+    - \log\left(
+        \E_{x\sim P_X} \E_{\epsilon\sim P_\epsilon} \E_{x'\sim P_X} \left[
+          T_\psi(x',f_\theta(x)+\epsilon)
+        \right]
+      \right)
+\]
+with two batches of inputs, and use this to optimize for $\theta$. To evaluate the quality of the approximate density, i.e., the cross entropy, we then use
+$\hat{\mathbb{H}}[Y] = \hat{\mathbb{I}}[X,Y] + \mathbb{H}[\epsilon]$.
+\item SLARE-MINE: we compute $\hat{p}_Y$ in terms of the discriminator, using that optimal value is
+$T^*=\frac{p_{Y|X}}{p_Y}$, so
+\begin{align*}
+&\hat{\mathbb{H}}[Y]
+= \E_{x\sim P_X} \E_{\epsilon\sim P_\epsilon} \log \left(\frac{T_\psi(x,f_\theta(x)+\epsilon)}{p_{Y|X}(f_\theta(x)+\epsilon)} \right)
+= \E_{x\sim P_X} \E_{\epsilon\sim P_\epsilon} \left[\log T_\psi(x,f_\theta(x)+\epsilon) \right] + \mathbb{H}[\epsilon]
+\\
+&\hat{\mathbb{I}}[X,Y]
+= \hat{\mathbb{H}}[Y] - \mathbb{H}[\epsilon]
+= \E_{x\sim P_X} \E_{\epsilon\sim P_\epsilon} \left[\log T_\psi(x,f_\theta(x)+\epsilon)\right]
+\end{align*}
+and we use these estimates to optimize for $\theta$ and evaluate the cross entropy.
+\end{enumerate}
 
-\subsection{Background and Related Work}
+\subsection{4. Background and Related Work}
 
+Using corrupted labels in order to study regularizers and their ability to prevent overfitting has been done for discrete output sample spaces $\Omega_Y$ \citep{zhang2016understanding}. However, the degree of detachment in these experiments is measured empirically by the (varying) probability of replacing a true label with one sampled from a discrete uniform distribution, rather than attempting to estimate the resulting mutual information, which quantifies the amount of dependency between the inputs and labels directly.
+\\
+\\
+Our approach to generate labels with controlled mutual information is inspired by and closely related to several techniques in representaion learning
+\citep{bengio2013representation}; particularly, those seeking to learn representations
+by maximizing the mutual information between original and latent spaces. Like MINE
+\citep{belghazi2018mine} and Deep INFOMAX \citep{hjelm2018learning}, we tackle density
+intractability through the use of discriminators \citep{goodfellow2014generative},
+though our approach is different in the sense that we use a stochastic encoder and
+exploit the location of this stochasticity to make the problem well-defined and have a
+tractable conditional density $p_{Y|X}$.
+\\
+\\
+Noise-as-targets (NAT; \cite{bojanowski2017unsupervised}) also shares a similarity with
+one of our investigated approaches; namely, that it seeks to learn a
+uniformly-distributed latent space (Ferenc Huszar has also noted that this can be viewed
+as a method to maximize mutual information). \cite{hjelm2018learning} also obtained their best
+results with respect to a representation-learning-based evaluation by introducing an
+additional penalty term to their model which involved matching the latent space to a
+uniform distribution.
 
+\subsection{5. Hypotheses}
 
-\subsection{Hypotheses}
-asd
+Unlike MINE \citep{belghazi2018mine} and related methods, SLARE exploits the fact that $f_\theta$ is deterministic and the source of stochasticity $P_\epsilon$. This leads to Proposition 1, which prevents the requirement to amortize the discriminator (i.e., setting the discriminator's domain to $\Omega_X \times \Omega_Y$) and makes the discriminator's objective arguably easier to optimize: if the initial labels $Y$ (subject to the noise $\epsilon$) are very weakly or not correalted to $X$, distinguishing the joint distribution and the product of the marginals becomes extremely difficult, potentially leading the optimization with respect to $\psi$ to become stuck.
+\\
+\\
+SLARE may potentially fail, however, because the estimate of the entropy is the cross entropy is implicitly
+\[
+    -\E_{y\sim P_Y} \log \hat{p}_Y(y) = \mathbb{H}[Y] + \DKL[P_Y \| \hat{P}_Y]
+\]
+and maximizing this quantity is possible by changing $\theta$ in a direction that pushes the estimated density $\hat{p}_Y$ further from $p_Y$ rather than maximizing the entropy.
+Methods like MINE, on the other hand, guarantee that the estimated mutual information is strictly a lower bound of the actual mutual information, and thus its maximization does not suffer from this issue.
 
+\subsection{6. Experiments}
 
-\subsection{Experiments}
-asd
+In this paper, we limit SLARE to output sample spaces of the form $\Omega_Y = [0,1]^n$.
+For all of our models, we use feedforward neural networks with a single hidden layer of size 256 with the mish activation function on hidden layers \citep{misra2019mish} and appropriately scaled $\tanh$ output layers. All neural networks have a batch size of 128 and are optimized using SGD with a learning rate of 0.1.
 
+\subsubsection{6.1 SLARE-Disc}
 
-\subsection{Summary and Potential Impact}
-asd
+To ensure that $f_\theta(x)+\epsilon \in \Omega_Y$ and thus that $\mathbb{H}[Y]$ is bounded above by the entropy of the uniform distribution in $[0,1]^n$, we use a multivariate
+uniform $P_\epsilon$ where each component has distribution
+$\mathrm{Uniform}(-\beta, \beta)$ with $\beta \in \left[0,\frac{1}{2}\right)$, and
+restrict the output of $f_\theta$ to the range $[\beta, 1 - \beta]^n$.
+\\
+\\
+For our initial experiments, we use the MNIST dataset \citep{deng2012mnist} as the input distribution for the sake of using a real-world dataset-- the fact that the labels are discrete is irrelevant because we do not make use of the labels at any time; the interest is to show that SLARE can generate synthetic continuous labels with fixed mutual information. All discriminators are also trained with SGD using a learning rate of 0.1. For the MINE and SLARE-MINE models, to draw samples from the conditional and the marginal, we use half the examples $X$ in the batch along their computed $Y$ but associate the other $X'$ to the same first $Y$. We use 50000 examples for training and keep 10000 examples for validation, and run all models for 3 epochs.
+\\
+\\
+\begin{table}
+\centering
+\begin{tabular}{|p{4cm}|p{2cm}|p{2cm}|p{2cm}|}
+  \hline
+  & $\alpha=1$ & $\alpha=10$ & $\alpha=100$ \\
+  \hline
+  SLARE-Disc (dv) & 0.5988 & 77.3394 & 156.8606 \\
+  \hline
+  SLARE-Disc (dv,sq) & \textcolor{red}{NaN} & 83.5478 & \textcolor{red}{NaN} \\
+  \hline
+  SLARE-Disc (fdiv) & 0.3863 & \textcolor{red}{NaN} & \textcolor{red}{NaN} \\
+  \hline
+  SLARE-Disc (fdiv,sq) & \textcolor{red}{NaN} & \textcolor{red}{NaN} & 80.7910 \\
+  \hline
+  SLARE-Disc (gan) & & & \\
+  \hline
+  SLARE-Disc (gan,sq) & & & \\
+  \hline
+  SLARE-MINE  (dv) & 2.4453 & 2.3958 & 2.4736 \\
+  \hline
+  SLARE-MINE (dv,sq) & 2.4525 & 2.5370 & 2.4674 \\
+  \hline
+  SLARE-MINE (fdiv) & 2.4857 & 2.5761 & 2.3519 \\
+  \hline
+  SLARE-MINE (fdiv,sq) & 2.5217 & 2.5896 & 2.3597 \\
+  \hline
+  SLARE-MINE (gan) & & & \\
+  \hline
+  SLARE-MINE (gan,sq) & & & \\
+  \hline
+  \hline
+  MINE (dv) & -0.0004 & -0.0003 & -0.0002 \\
+  \hline
+  MINE (dv,sq) & 0.0005 & -0.0006 & 0.0004 \\
+  \hline
+  MINE (fdiv) & -0.0002 & 0.0004 & 0.0000 \\
+  \hline
+  MINE (fdiv,sq) & 0.0001 & 0.0002 & -0.0003 \\
+  \hline
+  MINE (gan) & & & \\
+  \hline
+  MINE (gan,sq) & & & \\
+  \hline
+\end{tabular}
+\caption[Table 1]{results on (estimated) mutual information for different SLARE models on the MNIST validation data and $n=10$ compared to the MINE baseline. ``sq'' denotes the use of the square loss with $\beta=10^{-3}$, while the default is to maximize $\mathbb{H}[Y]$ and setting $\beta$ in function of $\alpha$. ``dv'', ``fdiv'', and ``gan'' denote Donsker-Varadhan, f-divergence, and GAN discriminators, respectively.}
+\end{table}
+\textcolor{red}{The results suggest that, as hypothesized, MINE is unable to improve and that the SLARE models have a tendency to overestimate the mutual information. Upon inspection of the gradient norms of both the main objective and the discriminator, we found that the gradients of the main objective quickly vanish to norm 0 in the baseline MINE models, and close to 0 in the SLARE models. This issue must be addressed to improve results in all models. The non-amortized SLARE model also seems to suffer from numerical stability issues in certain runs, which upon inspection is occuring due to the discriminator loss not being bounded above as. The GAN-discriminator-based models are yet to be developed.}
 
+\subsubsection{6.2 SLARE-Direct}
+
+\textcolor{red}{Work in progress.}
+
+\subsubsection{6.3 Application of SLARE to Study Regularizers}
+
+\textcolor{red}{Work in progress.}
+
+\subsection{7. Conclusion and Future Work}
+
+\textcolor{red}{Work in progress.}
+\\
+\\
+Developing a similar method to SLARE for discrete data (tentatively, SLACE) would have to follow a different methodology and is thus left as future work which can be compared to the work of \cite{zhang2016understanding} and others.
 
 \newpage
 \renewcommand\refname{References}
