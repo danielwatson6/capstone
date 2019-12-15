@@ -1,5 +1,4 @@
 import tensorflow as tf
-import tensorflow.keras.layers as tfkl
 
 import boilerplate as tfbp
 from models import slare_disc
@@ -7,27 +6,39 @@ from models import slare_disc
 
 @tfbp.default_export
 class SLARE_MINE(slare_disc):
+    """SLARE model following Mutual Information Neural Estimation.
+
+    http://proceedings.mlr.press/v80/belghazi18a.html
+    """
+
     default_hparams = {
         **slare_disc.default_hparams,
         "slare_mi": False,
     }
 
-    def p_Y(self, x):
-        """PDF estimate of Y = f(X) + E."""
-        e = self.P_E.sample(tf.shape(x)[0])
-        y = self.f(x) + e
-        # Estimate of the ratio p_Y|X / p_Y.
-        tr = self.T_ratio(tf.concat([x, y], 1))
-        return self.p_E(e) / tr
+    def T_inputs(self, x, y):
+        """Build inputs for the discriminator."""
+        x_pos, x_neg = tf.split(x, 2)
+        y_pos, _ = tf.split(y, 2)
+        return tf.concat([x_pos, y_pos], 1), tf.concat([x_neg, y_pos], 1)
 
-    def I_XY(self, x):
+    def loss_inputs(self, x, y):
+        """Build inputs for the main loss."""
         # MINE yields two ways to estimate the mutual information:
         # 1. Use the fact that the total discriminator loss is a lower bound to MI.
         # 2. Use the PDF ratio estimate yielded by the discriminator with SLARE.
         if self.hparams.slare_mi:
-            x_pos, x_neg = tf.split(x, 2)
-            y_pos = self.f(x_pos)
-            xy_pos = tf.concat([x_pos, y_pos], 1)
-            xy_neg = tf.concat([x_neg, y_pos], 1)
-            return self.loss_disc(xy_pos, xy_neg)
-        return super().I_XY(x)
+            return tf.concat([x, y], 1)
+        return self.T_inputs(x, y)
+
+    def H_Y(self, xy):
+        """Entropy estimate of Y."""
+        # We can take advantage of the fact that we know the exact entropy of E.
+        tr = self.T_ratio(xy)  # estimate of the ratio p_Y|X / p_Y
+        return tf.reduce_mean(tf.math.log(tr)) + self.H_E()
+
+    def I_XY(self, xy):
+        """Mutual information estimate between X and Y."""
+        if self.hparams.slare_mi:
+            return super().I_XY(xy)
+        return -self.loss_disc(*xy)
