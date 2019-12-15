@@ -37,10 +37,6 @@ class SLARE_Disc(slare):
         """Build inputs for the discriminator."""
         raise NotImplementedError
 
-    def loss_inputs(self, x, y):
-        """Build inputs for the main loss."""
-        raise NotImplementedError
-
     def T_ratio(self, inputs):
         """PDF ratio estimate as a transformation of the discriminator."""
         t = self.T(inputs)

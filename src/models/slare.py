@@ -13,7 +13,7 @@ class SLARE(tfbp.Model):
     """Abstract SLARE model."""
 
     default_hparams = {
-        "output_size": 2,
+        "output_size": 10,
         "target_mi": 10.0,
         "hidden_sizes": [256],
         "square_loss": False,
@@ -51,6 +51,10 @@ class SLARE(tfbp.Model):
         self.f.add(
             tfkl.Dense(self.hparams.output_size, activation=tanh_restricted(beta))
         )
+
+    def loss_inputs(self, x, y):
+        """Build inputs for the main loss."""
+        raise NotImplementedError
 
     def p_E(self, y):
         """PDF of E."""
@@ -95,10 +99,11 @@ class SLARE(tfbp.Model):
 
     @tfbp.runnable
     def eval(self, data_loader):
-        valid_data = data_loader()
+        valid_data = data_loader.load()
         emis = []
         for x, _ in valid_data:
-            emi, _ = self.loss(x)
+            y = self.f(x) + self.P_E.sample(tf.shape(x)[0])
+            emi, _ = self.loss(self.loss_inputs(x, y))
             emis.append(emi)
         tmi = self.hparams.target_mi
         mmi = tf.reduce_mean(emis)
