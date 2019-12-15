@@ -75,9 +75,18 @@ if __name__ == "__main__":
             json.dump({"model": sys.argv[3], "data_loader": sys.argv[4]}, f)
 
     args = {}
+    saved_hparams = {}
+    hparams_json_path = os.path.join("experiments", sys.argv[2], "hparams.json")
+    if os.path.exists(hparams_json_path):
+        with open(hparams_json_path) as f:
+            saved_hparams = json.load(f)
     for name, value in Model.default_hparams.items():
+        if name in saved_hparams:
+            value = saved_hparams[name]
         args[name] = value
     for name, value in DataLoader.default_hparams.items():
+        if name in saved_hparams:
+            value = saved_hparams[name]
         args[name] = value
 
     for name, value in args.items():
