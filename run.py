@@ -58,6 +58,7 @@ if __name__ == "__main__":
                 "Warning: model saved at",
                 os.path.join("experiments", sys.argv[2]),
                 f"already points to `models.{classes['model']}`, ignoring...",
+                file=sys.stderr,
             )
             classes["data_loader"] = sys.argv[4]
             DataLoader = tfbp.get_data_loader(classes["data_loader"])
@@ -106,9 +107,11 @@ if __name__ == "__main__":
                     f"Cannot infer type of hyperparameter `{name}`. Please provide a "
                     "default value with nonzero length."
                 )
+            # TODO: allow falsy values for boolean hyperparameters.
             parser.add_argument(
                 f"--{name}", f"--{name}_", nargs="+", type=type(value[0]), default=value
             )
+        # TODO: allow falsy values for boolean hyperparameters.
         else:
             parser.add_argument(f"--{name}", type=type(value), default=value)
 
@@ -120,7 +123,7 @@ if __name__ == "__main__":
             del kwargs[k]
 
     # Instantiate model and data loader.
-    model = Model(os.path.join("experiments", FLAGS.save_dir), **kwargs)
+    model = Model(save_dir=os.path.join("experiments", FLAGS.save_dir), **kwargs)
     data_loader = DataLoader(**kwargs)
 
     # Restore the model's weights, or save them for a new run.

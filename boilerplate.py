@@ -39,8 +39,11 @@ class Model(tf.keras.Model):
         self._save_dir = save_dir
         self._method = method
         self.hparams = {**self.default_hparams, **hparams}
-        self._ckpt = None
-        self._mananger = None
+
+        self._ckpt = tf.train.Checkpoint(model=self)
+        self._manager = tf.train.CheckpointManager(
+            self._ckpt, directory=self.save_dir, max_to_keep=1
+        )
 
         # If the model's hyperparameters were saved, the saved values will be used as
         # the default, but they will be overriden by hyperparameters passed to the
@@ -63,6 +66,10 @@ class Model(tf.keras.Model):
     def hparams(self):
         return self._hparams
 
+    @property
+    def hp(self):
+        return self._hparams
+
     @hparams.setter
     def hparams(self, value):
         self._hparams = Hyperparameters(value)
@@ -73,20 +80,15 @@ class Model(tf.keras.Model):
 
     def save(self):
         """Save the model's weights."""
-        if self._ckpt is None:
-            self._ckpt = tf.train.Checkpoint(model=self)
-            self._manager = tf.train.CheckpointManager(
-                self._ckpt, directory=self.save_dir, max_to_keep=1
-            )
         self._manager.save()
+
+    def is_saved(self):
+        return self._manager.latest_checkpoint is not None
 
     def restore(self):
         """Restore the model's latest saved weights."""
-        if self._ckpt is None:
-            self._ckpt = tf.train.Checkpoint(model=self)
-            self._manager = tf.train.CheckpointManager(
-                self._ckpt, directory=self.save_dir, max_to_keep=1
-            )
+        if not self.is_saved():
+            raise ValueError(f"No checkpoint to restore in {self.save_dir}.")
         self._ckpt.restore(self._manager.latest_checkpoint)
 
     def make_summary_writer(self, dirname):
@@ -109,6 +111,10 @@ class DataLoader:
 
     @property
     def hparams(self):
+        return self._hparams
+
+    @property
+    def hp(self):
         return self._hparams
 
     @hparams.setter
