@@ -1,53 +1,46 @@
 import numpy as np
+import researchflow as rf
 import tensorflow as tf
 
-import boilerplate as tfbp
 from models import mi_disc as MIDisc
 
 
-@tfbp.default_export
+@rf.export
 class UBDisc(MIDisc):
     """Discriminator-based MI upper bounder boilerplate."""
 
-    default_hparams = {
-        **MIDisc.default_hparams,
-        "var_xi": 1.0,
-    }
+    @staticmethod
+    def hparams(hp):
+        MIDisc.hparams(hp)
+        hp.Float("var_q", 1e-3, 1.0, default=0.1, sampling="log")
 
-    def p_xi_sample(self, n=1):
-        """Sample from P_ξ."""
+    def q_y_sample(self, n=1):
+        """Sample from Q_Y."""
         shape = [n, self.enc.hp.latent_size]
-        return tf.random.normal(shape, stddev=self.hp.var_xi ** 0.5)
+        return tf.random.normal(shape, stddev=self.hp.var_q ** 0.5)
 
-    def p_xi(self, y):
-        """Evaluate p_ξ(y)."""
-        z = (2 * np.pi * self.hp.var_xi) ** (self.enc.hp.latent_size / 2)
+    def q_y(self, y):
+        """Evaluate q_Y."""
+        z = (2 * np.pi * self.hp.var_q) ** (self.enc.hp.latent_size / 2)
         return (
             tf.math.exp(-tf.reduce_sum(y ** 2, axis=-1) / (2 * self.enc.hp.latent_size))
             / z
         )
 
-    def q_y(self, y):
-        """Evaluate the approximation to p_Y.
-
-        This should be overriden depending on the discriminator's global optimum.
-        """
-        raise NotImplementedError
-
     def I(self, x, y=None):
         if y is None:
             y = self.enc.p_yGx_sample(x)
-        return -tf.reduce_mean(tf.math.log(self.q_y(y))) - self.enc.H_eps
+        return ...  # TODO
 
     def train_step_fixed_enc(self, x):
         y = self.enc.p_yGx_sample(x)
-        xi = self.p_xi_sample(n=tf.shape(x)[0])
+        y_q = self.q_y_sample(n=tf.shape(x)[0])
 
         with tf.GradientTape(watch_accessed_variables=False) as g:
             g.watch(self.T.trainable_weights)
 
             loss_pos = -self.I_pos(y)
-            loss_neg = -self.I_neg(xi)
+            loss_neg = -self.I_neg(y_q)
             loss = loss_pos + loss_neg
 
             if self.hp.disc_iter and self.step % 2 == 0:
@@ -63,5 +56,5 @@ class UBDisc(MIDisc):
 
     def valid_step(self, x):
         y = self.enc.p_yGx_sample(x)
-        xi = self.p_xi_sample(n=tf.shape(x)[0])
-        return -self.I_pos(y) - self.I_neg(xi), self.I(x, y=y)
+        y_q = self.q_y_sample(n=tf.shape(x)[0])
+        return -self.I_pos(y) - self.I_neg(y_q), self.I(x, y=y)

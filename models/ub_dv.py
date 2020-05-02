@@ -1,4 +1,3 @@
-import numpy as np
 import researchflow as rf
 import tensorflow as tf
 
@@ -10,4 +9,4 @@ class UB_NWJ(UBDisc):
     """Nguyen-Wainwright-Jordan MI upper bounder."""
 
     def I_neg(self, y):
-        return -tf.reduce_mean(self.T(y)) / np.e
+        return -tf.math.log(tf.reduce_mean(self.T(y)))

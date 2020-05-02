@@ -1,10 +1,10 @@
+import researchflow as rf
 import tensorflow as tf
 
-import boilerplate as tfbp
 from models import lb_disc as LBDisc
 
 
-@tfbp.default_export
+@rf.export
 class LB_DV(LBDisc):
     """Donsker-Varadhan MI lower bounder."""
 

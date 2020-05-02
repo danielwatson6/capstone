@@ -1,17 +1,18 @@
+import researchflow as rf
 import tensorflow as tf
 
-import boilerplate as tfbp
 
+@rf.export
+class Gaussian(rf.DataLoader):
+    """Gaussian data loader."""
 
-@tfbp.default_export
-class Gaussian(tfbp.DataLoader):
-    default_hparams = {
-        "batch_size": 32,
-        "latent_size": 10,
-        "num_train": 50000,
-        "num_valid": 10000,
-        "macro": False,
-    }
+    @staticmethod
+    def hparams(hp):
+        hp.Int("batch_size", 16, 512, default=32, sampling="log")
+        hp.Fixed("latent_size", 10)
+        hp.Fixed("num_train", 50000)
+        hp.Fixed("num_valid", 10000)
+        hp.Fixed("macro", False)
 
     def __call__(self):
         tf.random.set_seed(2020)

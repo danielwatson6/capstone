@@ -1,32 +1,34 @@
+import researchflow as rf
 import tensorflow as tf
 import tensorflow.keras.layers as tfkl
 
-import boilerplate as tfbp
 from models import mi as MI
 
 
-@tfbp.default_export
+@rf.export
 class MIDisc(MI):
     """Discriminator-based MI bounder boilerplate."""
 
-    default_hparams = {
-        **MI.default_hparams,
-        "disc_hidden": [128],
-        "disc_iter": False,
-        "disc_opt": "sgd",
-        "disc_lr": 0.1,
-    }
+    @staticmethod
+    def hparams(hp):
+        MI.hparams(hp)
+        hp.Int("disc_hidden_size", 128, 1024, default=128, sampling="log")
+        hp.Int("disc_num_hidden", 1, 3, default=1)
+        hp.Boolean("disc_iter", default=False)
+        hp.Choice("disc_opt", ["sgd", "adam"], default="sgd")
+        hp.Float("disc_lr", 5e-4, 5e-2, default=1e-3, sampling="log")
 
-    def __init__(self, *a, **kw):
-        super().__init__(*a, **kw)
+    def __init__(self, **kw):
+        super().__init__(**kw)
 
         # Discriminator neural network.
         self.T = tf.keras.Sequential()
-        for hs in self.hp.disc_hidden:
-            self.T.add(tfkl.Dense(hs, activation=tf.math.tanh))
+        for _ in range(self.hp.disc_num_hidden):
+            self.T.add(tfkl.Dense(self.hp.disc_hidden_size, activation=tf.math.tanh))
+        self.T.add(tfkl.Dense(1, activation=tf.math.softplus))
 
         # Optimizer.
-        if self.hp.disc_opt.lower() == "adam":
+        if self.hp.disc_opt == "adam":
             self.disc_opt = tf.optimizers.Adam(self.hp.disc_lr)
         else:
             self.disc_opt = tf.optimizers.SGD(self.hp.disc_lr)

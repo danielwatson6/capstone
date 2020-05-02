@@ -1,10 +1,10 @@
+import researchflow as rf
 import tensorflow as tf
 
-import boilerplate as tfbp
 from models import mi as MI
 
 
-@tfbp.default_export
+@rf.export
 class LB_NCE(MI):
     """Noise-contrastive estimation MI lower bounder."""
 

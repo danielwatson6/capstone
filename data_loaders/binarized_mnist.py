@@ -4,7 +4,7 @@ import tensorflow_datasets as tfds
 
 
 @rf.export
-class MNIST(rf.DataLoader):
+class BinarizedMNIST(rf.DataLoader):
     """MNIST data loader."""
 
     @staticmethod
@@ -31,13 +31,15 @@ class MNIST(rf.DataLoader):
 
         return ds_valid
 
+    def _binarize(self, x):
+        x = tf.reshape(tf.cast(x["image"], tf.float32) / 255.0, [-1, 28 * 28])
+        return tf.cast(tf.random.uniform(tf.shape(x)) < x, tf.float32)
+
     def _prep_dataset(self, ds):
         ds = ds.shuffle(10000)
         if self.hp.macro:
             ds = ds.batch(self.hp.num_valid)
         else:
             ds = ds.batch(self.hp.batch_size)
-        ds = ds.map(
-            lambda x: tf.reshape(tf.cast(x["image"], tf.float32) / 255.0, [-1, 28 * 28])
-        )
+        ds = ds.map(self._binarize)
         return ds.prefetch(1)

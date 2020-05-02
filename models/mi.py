@@ -1,39 +1,39 @@
-import os
+import os.path
 import sys
 
+import researchflow as rf
 import tensorflow as tf
 
-import boilerplate as tfbp
 from models import encoder as Encoder
 
 
-@tfbp.default_export
-class MI(tfbp.Model):
+@rf.export
+class MI(rf.Model):
     """MI bounder boilerplate."""
 
-    default_hparams = {
-        **Encoder.default_hparams,
-        "opt": "adam",
-        "lr": 1e-3,
-        "epochs": 5,
-    }
+    @staticmethod
+    def hparams(hp):
+        Encoder.hparams(hp)
+        hp.Fixed("encoder", "")
+        hp.Fixed("epochs", 10)
+        hp.Choice("opt", ["sgd", "adam"], default="sgd")
+        hp.Float("lr", 5e-4, 5e-2, default=1e-3, sampling="log")
 
-    def __init__(self, *a, **kw):
-        super().__init__(*a, **kw)
+    def __init__(self, **kw):
+        super().__init__(**kw)
         self.step = tf.Variable(0, dtype=tf.int64, trainable=False)
         self.epoch = tf.Variable(0, dtype=tf.int64, trainable=False)
 
+        encoder_save_dir = os.path.join(self.save_dir, "encoder")
+        if self.hp.encoder:
+            encoder_save_dir = os.path.join(self.save_dir, self.hp.encoder)
         self.enc = Encoder(
-            save_dir=os.path.join(kw["save_dir"], "..", "encoder"),
-            enc_hidden=self.hp.enc_hidden,
-            latent_size=self.hp.latent_size,
-            var_eps=self.hp.var_eps,
-            gaussian=self.hp.gaussian,
+            save_dir=os.path.join(encoder_save_dir), hparams=kw.get("hparams"),
         )
         self._fix_enc = self.enc.is_saved()
 
         # Optimizer.
-        if self.hp.opt.lower() == "adam":
+        if self.hp.opt == "adam":
             self.opt = tf.optimizers.Adam(self.hp.lr)
         else:
             self.opt = tf.optimizers.SGD(self.hp.lr)
@@ -61,24 +61,8 @@ class MI(tfbp.Model):
         """Validation step."""
         raise NotImplementedError
 
-    def save(self):
-        super().save()
-        if not self._fix_enc:
-            self.enc.save()
-
-    @tfbp.runnable
     # @tf.function
-    def train(self, data_loader):
-        if self.hp.gaussian and not self._fix_enc:
-            return self.enc.save()
-
-        ds_train, ds_valid = data_loader()
-        train_writer = self.make_summary_writer("train")
-        valid_writer = self.make_summary_writer("valid")
-
-        # Build the model's weights.
-        self.I(next(ds_valid))
-
+    def train_loop(self, ds_train, ds_valid):
         while self.epoch < self.hp.epochs:
             for x in ds_train:
                 if self._fix_enc:
@@ -89,19 +73,46 @@ class MI(tfbp.Model):
                 if self.step % 100 == 0:
                     valid_loss, valid_mi = self.valid_step(next(ds_valid))
 
-                    with train_writer.as_default():
+                    with self._train_writer.as_default():
                         tf.summary.scalar("loss", train_loss, step=self.step)
                         tf.summary.scalar("mi", train_mi, step=self.step)
 
-                    with valid_writer.as_default():
+                    with self._valid_writer.as_default():
                         tf.summary.scalar("loss", valid_loss, step=self.step)
                         tf.summary.scalar("mi", valid_mi, step=self.step)
 
                 self.step.assign_add(1)
             self.epoch.assign_add(1)
-            self.save()
 
-    @tfbp.runnable
+    def save(self):
+        super().save()
+        if not self._fix_enc:
+            self.enc.save()
+
+    @rf.cli
+    def train(self, data_loader):
+        tf.print(
+            f"Training {self.__class__.__name__} model (fixed_encoder={self._fix_enc})"
+        )
+        tf.print("Saved at:", self.save_dir)
+        tf.print("Hyperparameters:")
+        for name, value in self.hp._asdict().items():
+            tf.print(f"  {name}: {value}")
+
+        if self.hp.gaussian and not self._fix_enc:
+            return self.enc.save()
+
+        ds_train, ds_valid = data_loader()
+        self._train_writer = self.make_summary_writer("train")
+        self._valid_writer = self.make_summary_writer("valid")
+
+        # Build the model's weights.
+        self.valid_step(next(ds_valid))
+
+        self.train_loop(ds_train, ds_valid)
+        self.save()
+
+    @rf.cli
     def estimate(self, data_loader):
         ds = data_loader()
 
@@ -112,7 +123,8 @@ class MI(tfbp.Model):
             avg += (tf.reduce_sum(self.I(batch)) - avg) / i
 
         tf.print(avg, output_stream=sys.stdout)
+        return avg
 
-    @tfbp.runnable
+    @rf.cli
     def estimate_test(self, data_loader):
         return self.estimate(data_loader)

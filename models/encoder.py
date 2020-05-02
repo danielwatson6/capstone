@@ -1,23 +1,24 @@
 import numpy as np
+import researchflow as rf
 import tensorflow as tf
 from tensorflow.keras import layers as tfkl
 
-import boilerplate as tfbp
 
-
-@tfbp.default_export
-class Encoder(tfbp.Model):
+@rf.export
+class Encoder(rf.Model):
     """Encoder boilerplate."""
 
-    default_hparams = {
-        "enc_hidden": [128],
-        "latent_size": 10,
-        "var_eps": 0.1,
-        "gaussian": 0.0,
-    }
+    @staticmethod
+    def hparams(hp):
+        hp.Int("enc_hidden_size", 128, 1024, default=128, sampling="log")
+        hp.Int("enc_num_hidden", 1, 3, default=1)
+        hp.Choice("enc_activation", ["tanh", "relu"], default="tanh")
+        hp.Fixed("latent_size", 10)
+        hp.Float("var_eps", 1e-3, 1.0, default=0.1, sampling="log")
+        hp.Float("gaussian", 0.0, 100.0, default=0.0)
 
-    def __init__(self, *a, **kw):
-        super().__init__(*a, **kw)
+    def __init__(self, **kw):
+        super().__init__(**kw)
 
         # Forward pass neural network.
         self.f = tf.keras.Sequential()
@@ -34,8 +35,14 @@ class Encoder(tfbp.Model):
             self.a = a_sq ** 0.5
             self.f.add(tfkl.Lambda(lambda x: self.a * x))
         else:
-            for hs in self.hp.enc_hidden:
-                self.f.add(tfkl.Dense(hs, activation=tf.math.tanh))
+            for _ in range(self.hp.enc_num_hidden):
+                self.f.add(
+                    tfkl.Dense(
+                        self.hp.enc_hidden_size, activation=self.hp.enc_activation
+                    )
+                )
+
+            # Constrain the output to a bounded domain to ensure MI is bounded above.
             self.f.add(tfkl.Dense(self.hp.latent_size, activation=tf.math.tanh))
 
         # Constant: H[ε].
@@ -62,3 +69,9 @@ class Encoder(tfbp.Model):
     def p_yGx(self, y, fx):
         """Evaluate p_{Y|x}(y)."""
         return self.p_eps(y - fx)
+
+    @rf.cli
+    def create(self, data_loader):
+        ds = iter(data_loader())
+        self.f(next(ds))  # build the model's weights
+        self.save()

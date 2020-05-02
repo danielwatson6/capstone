@@ -1,17 +1,13 @@
+import researchflow as rf
 import tensorflow as tf
 import tensorflow.keras.layers as tfkl
 
-import boilerplate as tfbp
 from models import mi_disc as MIDisc
 
 
-@tfbp.default_export
+@rf.export
 class LBDisc(MIDisc):
     """Discriminator-based MI lower bounder boilerplate."""
-
-    def __init__(self, *a, **kw):
-        super().__init__(*a, **kw)
-        self.T.add(tfkl.Dense(1, activation=tf.math.softplus))
 
     def I(self, x):
         y = self.enc.p_yGx_sample(x)
@@ -25,11 +21,14 @@ class LBDisc(MIDisc):
             mi_split = self.I(x)
             mi = tf.reduce_sum(mi_split)
             if self.hp.disc_iter:
-                loss_this_step = -mi_split[self.step % 2]
+                if self.step % 2 == 0:
+                    disc_loss = -mi_split[0]
+                else:
+                    disc_loss = -mi_split[1]
             else:
-                loss_this_step = -mi
+                disc_loss = -mi
 
-        grads = g.gradient(loss_this_step, self.T.trainable_weights)
+        grads = g.gradient(disc_loss, self.T.trainable_weights)
         self.disc_opt.apply_gradients(zip(grads, self.T.trainable_weights))
         return -mi, mi
 
@@ -38,7 +37,10 @@ class LBDisc(MIDisc):
             mi_split = self.I(x)
             enc_loss = -tf.reduce_sum(mi_split)
             if self.hp.disc_iter:
-                disc_loss = -mi_split[self.step % 2]
+                if self.step % 2 == 0:
+                    disc_loss = -mi_split[0]
+                else:
+                    disc_loss = -mi_split[1]
             else:
                 disc_loss = enc_loss
 

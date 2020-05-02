@@ -1,15 +1,12 @@
 # This repository
-data/*
-!data/nothing.txt
-experiments/*
-!experiments/nothing.txt
+experiments/
 
 # Python
 *.py[cod]
 __pycache__/
 
 # Virtualenv
-env/
+venv/
 
 # macOS
 Icon?
