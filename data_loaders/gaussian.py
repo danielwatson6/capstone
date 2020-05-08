@@ -12,15 +12,20 @@ class Gaussian(rf.DataLoader):
         hp.Fixed("latent_size", 10)
         hp.Fixed("num_train", 50000)
         hp.Fixed("num_valid", 10000)
+        hp.Fixed("num_test", 10000)
         hp.Fixed("macro", False)
 
     def __call__(self):
         tf.random.set_seed(2020)
         ds_train = self._prep_dataset(self.hp.num_train)
         ds_valid = self._prep_dataset(self.hp.num_valid)
+        ds_test = self._prep_dataset(self.hp.num_test)
 
         if self.method == "train":
             return ds_train, iter(ds_valid.repeat())
+
+        elif self.method == "estimate_test":
+            return ds_test
 
         return ds_valid
 

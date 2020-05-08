@@ -17,7 +17,7 @@ class MI(rf.Model):
         hp.Fixed("encoder", "")
         hp.Fixed("epochs", 10)
         hp.Choice("opt", ["sgd", "adam"], default="sgd")
-        hp.Float("lr", 5e-4, 5e-2, default=1e-3, sampling="log")
+        hp.Float("lr", 5e-4, 0.1, default=1e-3, sampling="log")
 
     def __init__(self, **kw):
         super().__init__(**kw)
@@ -61,7 +61,7 @@ class MI(rf.Model):
         """Validation step."""
         raise NotImplementedError
 
-    # @tf.function
+    @tf.function
     def train_loop(self, ds_train, ds_valid):
         while self.epoch < self.hp.epochs:
             for x in ds_train:
@@ -128,3 +128,9 @@ class MI(rf.Model):
     @rf.cli
     def estimate_test(self, data_loader):
         return self.estimate(data_loader)
+
+    @rf.cli
+    def create(self, data_loader):
+        ds = iter(data_loader())
+        self.valid_step(next(ds))  # build the model's weights
+        self.save()

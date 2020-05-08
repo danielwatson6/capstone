@@ -8,5 +8,5 @@ from models import ub_disc as UBDisc
 class UB_NWJ(UBDisc):
     """Nguyen-Wainwright-Jordan MI upper bounder."""
 
-    def I_neg(self, y):
+    def D_neg(self, y):
         return -tf.math.log(tf.reduce_mean(self.T(y)))

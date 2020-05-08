@@ -6,7 +6,7 @@ from models import lb_disc as LBDisc
 
 
 @rf.export
-class LB_DV(LBDisc):
+class LB_NWJ(LBDisc):
     """Nguyen-Wainwright-Jordan MI lower bounder."""
 
     def I_neg(self, xy):

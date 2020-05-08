@@ -9,11 +9,19 @@ from models import mi_disc as MIDisc
 class LBDisc(MIDisc):
     """Discriminator-based MI lower bounder boilerplate."""
 
+    def I_pos(self, xy):
+        """Compute the mutual information term for positive samples."""
+        return tf.reduce_mean(tf.math.log(self.T(xy)))
+
+    def I_neg(self, xy):
+        """Compute the mutual information term for negative samples."""
+        raise NotImplementedError
+
     def I(self, x):
         y = self.enc.p_yGx_sample(x)
-        xy = tf.concat([x, y], axis=1)
-        x_y = tf.concat([tf.random.shuffle(x), y], axis=1)
-        return self.I_pos(xy), self.I_neg(x_y)
+        xy_joint = tf.concat([x, y], axis=1)
+        xy_marginals = tf.concat([tf.random.shuffle(x), y], axis=1)
+        return self.I_pos(xy_joint), self.I_neg(xy_marginals)
 
     def train_step_fixed_enc(self, x):
         with tf.GradientTape(watch_accessed_variables=False) as g:

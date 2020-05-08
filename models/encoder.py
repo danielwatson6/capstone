@@ -10,8 +10,8 @@ class Encoder(rf.Model):
 
     @staticmethod
     def hparams(hp):
-        hp.Int("enc_hidden_size", 128, 1024, default=128, sampling="log")
-        hp.Int("enc_num_hidden", 1, 3, default=1)
+        hp.Fixed("enc_hidden_size", 1024)
+        hp.Fixed("enc_num_hidden", 2)
         hp.Choice("enc_activation", ["tanh", "relu"], default="tanh")
         hp.Fixed("latent_size", 10)
         hp.Float("var_eps", 1e-3, 1.0, default=0.1, sampling="log")
@@ -47,7 +47,7 @@ class Encoder(rf.Model):
 
         # Constant: H[ε].
         self.H_eps = (
-            np.log(2 * np.pi * np.e * self.hp.var_eps) * self.hp.latent_size / 2
+            np.log(2 * np.pi * np.e * self.hp.var_eps ** self.hp.latent_size) / 2
         )
 
     def p_eps_sample(self, n=1):
@@ -58,9 +58,7 @@ class Encoder(rf.Model):
     def p_eps(self, y):
         """Evaluate p_ε(y)."""
         z = (2 * np.pi * self.hp.var_eps) ** (self.hp.latent_size / 2)
-        return (
-            tf.math.exp(-tf.reduce_sum(y ** 2, axis=-1) / (2 * self.hp.latent_size)) / z
-        )
+        return tf.math.exp(-tf.reduce_sum(y ** 2, axis=-1) / (2 * self.hp.var_eps)) / z
 
     def p_yGx_sample(self, x):
         """Sample from P_{Y|x}."""

@@ -5,8 +5,13 @@ from models import mi as MI
 
 
 @rf.export
-class LB_NCE(MI):
-    """Noise-contrastive estimation MI lower bounder."""
+class UB_LOO(MI):
+    """Leave-one-out MI upper bounder."""
+
+    @staticmethod
+    def hparams(hp):
+        MI.hparams(hp)
+        hp.Fixed("div_add", 0.0)
 
     def I(self, x):
         # NOTE: we don't use `p_yGx_sample` because calls to `p_yGx` take the f(x) to
@@ -22,18 +27,7 @@ class LB_NCE(MI):
         conditionals = self.enc.p_yGx(y_tile, fx_tile)
         # [p(y1|x1), ..., p(yN|xN)]
         d = tf.linalg.diag_part(conditionals)
-        # [mean_j p(y1|xj), ..., mean_j p(yN|xj)]
-        m = tf.reduce_mean(conditionals, axis=1)
-        return tf.reduce_mean(tf.math.log(d) - tf.math.log(m))
-
-    def train_step(self, x):
-        with tf.GradientTape() as g:
-            loss = -self.I(x)
-
-        grads = g.gradient(loss, self.trainable_weights)
-        self.opt.apply_gradients(zip(grads, self.trainable_weights))
-        return loss, -loss
-
-    def valid_step(self, x):
-        mi = self.I(x)
-        return -mi, mi
+        # [sum_j≠i p(y1|xj), ..., sum_j≠i p(yN|xj)]
+        m_unnorm = tf.reduce_sum(conditionals, axis=1) - d
+        m = m_unnorm / tf.cast(bs - 1, tf.float32)
+        return tf.reduce_mean(tf.math.log(d / (m + self.hp.div_add)))
