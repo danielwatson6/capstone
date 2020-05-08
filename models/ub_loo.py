@@ -4,6 +4,9 @@ import tensorflow as tf
 from models import mi as MI
 
 
+input_signature = (tf.TensorSpec(shape=[None, None], dtype=tf.float32),)
+
+
 @rf.export
 class UB_LOO(MI):
     """Leave-one-out MI upper bounder."""
@@ -13,7 +16,7 @@ class UB_LOO(MI):
         MI.hparams(hp)
         hp.Fixed("div_add", 0.0)
 
-    @tf.function(input_signature=self.input_signature)
+    @tf.function(input_signature=input_signature)
     def I(self, x):
         # NOTE: we don't use `p_yGx_sample` because calls to `p_yGx` take the f(x) to
         # prevent extra encoder forward passes.

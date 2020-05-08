@@ -39,8 +39,6 @@ class MI(rf.Model):
         else:
             self.opt = tf.optimizers.SGD(self.hp.lr, clipnorm=self.hp.clipnorm)
 
-        self.input_signature = (tf.TensorSpec(shape=[None, None], dtype=tf.float32),)
-
     def I(self, x):
         """Get the estimated MI for a batch."""
         raise NotImplementedError

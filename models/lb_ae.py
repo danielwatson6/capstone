@@ -5,6 +5,9 @@ import tensorflow.keras.layers as tfkl
 from models import mi as MI
 
 
+input_signature = (tf.TensorSpec(shape=[None, None], dtype=tf.float32),)
+
+
 @rf.export
 class LB_AE(MI):
     """Autoencoder."""
@@ -40,7 +43,7 @@ class LB_AE(MI):
             tf.nn.sigmoid_cross_entropy_with_logits(labels=x, logits=logits)
         )
 
-    @tf.function(input_signature=self.input_signature)
+    @tf.function(input_signature=input_signature)
     def I(self, x):
         """Mutual information UP TO AN INTRACTABLE CONSTANT."""
         logits = self.dec(self.enc.p_yGx_sample(x))
@@ -48,7 +51,7 @@ class LB_AE(MI):
             tf.nn.sigmoid_cross_entropy_with_logits(labels=x, logits=logits)
         )
 
-    @tf.function(input_signature=self.input_signature)
+    @tf.function(input_signature=input_signature)
     def train_step_fixed_enc(self, x):
         with tf.GradientTape(watch_accessed_variables=False) as g:
             g.watch(self.dec.trainable_weights)
@@ -58,7 +61,7 @@ class LB_AE(MI):
         self.opt.apply_gradients(zip(grads, self.dec.trainable_weights))
         return loss, -loss
 
-    @tf.function(input_signature=self.input_signature)
+    @tf.function(input_signature=input_signature)
     def train_step(self, x):
         with tf.GradientTape() as g:
             loss = self.loss(x)
@@ -67,6 +70,6 @@ class LB_AE(MI):
         self.opt.apply_gradients(zip(grads, self.trainable_weights))
         return loss, self.I(x)
 
-    @tf.function(input_signature=self.input_signature)
+    @tf.function(input_signature=input_signature)
     def valid_step(self, x):
         return self.loss(x), self.I(x)
