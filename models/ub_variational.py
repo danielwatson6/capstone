@@ -20,7 +20,7 @@ class UBVariational(MI):
     def log_q_y(self, y):
         """Evaluate log(q(y))."""
         return -0.5 * (
-            tf.reduce_sum(tf.math.exp(self.logvar) * (y - self.mean) ** 2, axis=-1)
+            tf.reduce_sum(tf.math.exp(-self.logvar) * (y - self.mean) ** 2, axis=-1)
             + self.hp.latent_size * np.log(2 * np.pi)
             + tf.reduce_sum(self.logvar, axis=-1)
         )
