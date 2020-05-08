@@ -22,6 +22,7 @@ class UBVariational(MI):
             + tf.reduce_sum(self.logvar, axis=-1)
         )
 
+    @tf.function(input_signature=self.input_signature)
     def I(self, x, y=None, ce=None):
         if y is None and ce is None:
             y = self.enc.p_yGx_sample(x)
@@ -29,6 +30,7 @@ class UBVariational(MI):
             ce = -tf.reduce_mean(self.log_q_y(y))
         return ce - self.enc.H_eps
 
+    @tf.function(input_signature=self.input_signature)
     def train_step_fixed_enc(self, x):
         weights = [self.mean, self.logvar]
         y = self.enc.p_yGx_sample(x)
@@ -42,6 +44,7 @@ class UBVariational(MI):
 
         return ce, self.I(x, ce=ce)
 
+    @tf.function(input_signature=self.input_signature)
     def valid_step(self, x):
         y = self.enc.p_yGx_sample(x)
         ce = -tf.reduce_mean(self.log_q_y(y))

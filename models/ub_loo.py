@@ -13,6 +13,7 @@ class UB_LOO(MI):
         MI.hparams(hp)
         hp.Fixed("div_add", 0.0)
 
+    @tf.function(input_signature=self.input_signature)
     def I(self, x):
         # NOTE: we don't use `p_yGx_sample` because calls to `p_yGx` take the f(x) to
         # prevent extra encoder forward passes.

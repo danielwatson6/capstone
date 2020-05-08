@@ -8,6 +8,7 @@ from models import mi as MI
 class LB_NCE(MI):
     """Noise-contrastive estimation MI lower bounder."""
 
+    @tf.function(input_signature=self.input_signature)
     def I(self, x):
         # NOTE: we don't use `p_yGx_sample` because calls to `p_yGx` take the f(x) to
         # prevent extra encoder forward passes.
@@ -26,6 +27,7 @@ class LB_NCE(MI):
         m = tf.reduce_mean(conditionals, axis=1)
         return tf.reduce_mean(tf.math.log(d) - tf.math.log(m))
 
+    @tf.function(input_signature=self.input_signature)
     def train_step(self, x):
         with tf.GradientTape() as g:
             loss = -self.I(x)
@@ -34,6 +36,7 @@ class LB_NCE(MI):
         self.opt.apply_gradients(zip(grads, self.trainable_weights))
         return loss, -loss
 
+    @tf.function(input_signature=self.input_signature)
     def valid_step(self, x):
         mi = self.I(x)
         return -mi, mi

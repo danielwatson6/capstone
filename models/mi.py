@@ -39,6 +39,8 @@ class MI(rf.Model):
         else:
             self.opt = tf.optimizers.SGD(self.hp.lr, clipnorm=self.hp.clipnorm)
 
+        self.input_signature = (tf.TensorSpec(shape=[None, None], dtype=tf.float32),)
+
     def I(self, x):
         """Get the estimated MI for a batch."""
         raise NotImplementedError
@@ -62,7 +64,28 @@ class MI(rf.Model):
         """Validation step."""
         raise NotImplementedError
 
-    def train_loop(self, ds_train, ds_valid):
+    def save(self):
+        super().save()
+        if not self._fix_enc:
+            self.enc.save()
+
+    @rf.cli
+    def train(self, data_loader):
+        tf.print(
+            f"Training {self.__class__.__name__} model (fixed_encoder={self._fix_enc})"
+        )
+        tf.print("Saved at:", self.save_dir)
+        tf.print("Hyperparameters:")
+        for name, value in self.hp._asdict().items():
+            tf.print(f"  {name}: {value}")
+
+        ds_train, ds_valid = data_loader()
+        self._train_writer = self.make_summary_writer("train")
+        self._valid_writer = self.make_summary_writer("valid")
+
+        # Build the model's weights.
+        self.valid_step(next(ds_valid))
+
         while self.epoch < self.hp.epochs:
             for x in ds_train:
                 t0 = tf.timestamp()
@@ -88,38 +111,12 @@ class MI(rf.Model):
 
                 self.step.assign_add(1)
             self.epoch.assign_add(1)
-
-    def save(self):
-        super().save()
-        if not self._fix_enc:
-            self.enc.save()
-
-    @rf.cli
-    def train(self, data_loader):
-        tf.print(
-            f"Training {self.__class__.__name__} model (fixed_encoder={self._fix_enc})"
-        )
-        tf.print("Saved at:", self.save_dir)
-        tf.print("Hyperparameters:")
-        for name, value in self.hp._asdict().items():
-            tf.print(f"  {name}: {value}")
-
-        if self.hp.gaussian and not self._fix_enc:
-            return self.enc.save()
-
-        ds_train, ds_valid = data_loader()
-        self._train_writer = self.make_summary_writer("train")
-        self._valid_writer = self.make_summary_writer("valid")
-
-        # Build the model's weights.
-        self.valid_step(next(ds_valid))
-
-        self.train_loop(ds_train, ds_valid)
-        self.save()
+            self.save()
 
     @rf.cli
     def estimate(self, data_loader):
         ds = data_loader()
+        tf.print("evaluating at step", self.step)
 
         # Running average.
         avg = 0.0

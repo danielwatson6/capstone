@@ -17,12 +17,14 @@ class LBDisc(MIDisc):
         """Compute the mutual information term for negative samples."""
         raise NotImplementedError
 
+    @tf.function(input_signature=self.input_signature)
     def I(self, x):
         y = self.enc.p_yGx_sample(x)
         xy_joint = tf.concat([x, y], axis=1)
         xy_marginals = tf.concat([tf.random.shuffle(x), y], axis=1)
         return self.I_pos(xy_joint), self.I_neg(xy_marginals)
 
+    @tf.function(input_signature=self.input_signature)
     def train_step_fixed_enc(self, x):
         with tf.GradientTape(watch_accessed_variables=False) as g:
             g.watch(self.T.trainable_weights)
@@ -40,6 +42,7 @@ class LBDisc(MIDisc):
         self.disc_opt.apply_gradients(zip(grads, self.T.trainable_weights))
         return -mi, mi
 
+    @tf.function(input_signature=self.input_signature)
     def train_step(self, x):
         with tf.GradientTape(persistent=True) as g:
             mi_split = self.I(x)
@@ -59,6 +62,7 @@ class LBDisc(MIDisc):
         self.disc_opt.apply_gradients(zip(disc_grads, self.T.trainable_weights))
         return enc_loss, -enc_loss
 
+    @tf.function(input_signature=self.input_signature)
     def valid_step(self, x):
         mi = tf.reduce_sum(self.I(x))
         return -mi, mi

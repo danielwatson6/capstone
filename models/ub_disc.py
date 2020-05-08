@@ -32,6 +32,7 @@ class UBDisc(MIDisc):
         """Compute the KL[P_Y||Q_Y] term for negative samples."""
         raise NotImplementedError
 
+    @tf.function(input_signature=self.input_signature)
     def I(self, x, y=None, y_q=None, d=None):
         if y is None:
             y = self.enc.p_yGx_sample(x)
@@ -41,6 +42,7 @@ class UBDisc(MIDisc):
             d = self.D_pos(y) + self.D_neg(y_q)
         return -(tf.reduce_mean(self.log_q(y)) + self.enc.H_eps + d)
 
+    @tf.function(input_signature=self.input_signature)
     def train_step_fixed_enc(self, x):
         y = self.enc.p_yGx_sample(x)
         y_q = self.q_sample(n=tf.shape(x)[0])
@@ -63,6 +65,7 @@ class UBDisc(MIDisc):
         self.disc_opt.apply_gradients(zip(grads, self.T.trainable_weights))
         return loss, self.I(x, y=y, d=-loss)
 
+    @tf.function(input_signature=self.input_signature)
     def valid_step(self, x):
         y = self.enc.p_yGx_sample(x)
         y_q = self.q_sample(n=tf.shape(x)[0])
