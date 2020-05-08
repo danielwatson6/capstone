@@ -11,7 +11,6 @@ input_signature = (tf.TensorSpec(shape=[None, None], dtype=tf.float32),)
 class LB_NCE(MI):
     """Noise-contrastive estimation MI lower bounder."""
 
-    @tf.function(input_signature=input_signature)
     def I(self, x):
         # NOTE: we don't use `p_yGx_sample` because calls to `p_yGx` take the f(x) to
         # prevent extra encoder forward passes.
@@ -39,7 +38,6 @@ class LB_NCE(MI):
         self.opt.apply_gradients(zip(grads, self.trainable_weights))
         return loss, -loss
 
-    @tf.function(input_signature=input_signature)
     def valid_step(self, x):
         mi = self.I(x)
         return -mi, mi

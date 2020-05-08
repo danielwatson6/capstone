@@ -46,7 +46,6 @@ class UBVariational(MI):
 
         return ce, self.I(x, ce=ce)
 
-    @tf.function(input_signature=input_signature)
     def valid_step(self, x):
         y = self.enc.p_yGx_sample(x)
         ce = -tf.reduce_mean(self.log_q_y(y))

@@ -43,7 +43,6 @@ class LB_AE(MI):
             tf.nn.sigmoid_cross_entropy_with_logits(labels=x, logits=logits)
         )
 
-    @tf.function(input_signature=input_signature)
     def I(self, x):
         """Mutual information UP TO AN INTRACTABLE CONSTANT."""
         logits = self.dec(self.enc.p_yGx_sample(x))
@@ -70,6 +69,5 @@ class LB_AE(MI):
         self.opt.apply_gradients(zip(grads, self.trainable_weights))
         return loss, self.I(x)
 
-    @tf.function(input_signature=input_signature)
     def valid_step(self, x):
         return self.loss(x), self.I(x)
