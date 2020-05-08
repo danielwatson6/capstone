@@ -18,6 +18,7 @@ class MI(rf.Model):
         hp.Fixed("epochs", 10)
         hp.Choice("opt", ["sgd", "adam"], default="sgd")
         hp.Float("lr", 5e-4, 0.1, default=1e-3, sampling="log")
+        hp.Fixed("clipnorm", 10.0)
 
     def __init__(self, **kw):
         super().__init__(**kw)
@@ -34,9 +35,9 @@ class MI(rf.Model):
 
         # Optimizer.
         if self.hp.opt == "adam":
-            self.opt = tf.optimizers.Adam(self.hp.lr)
+            self.opt = tf.optimizers.Adam(self.hp.lr, clipnorm=self.hp.clipnorm)
         else:
-            self.opt = tf.optimizers.SGD(self.hp.lr)
+            self.opt = tf.optimizers.SGD(self.hp.lr, clipnorm=self.hp.clipnorm)
 
     def I(self, x):
         """Get the estimated MI for a batch."""

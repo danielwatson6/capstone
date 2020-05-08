@@ -18,6 +18,7 @@ class MIDisc(MI):
         hp.Boolean("disc_iter", default=False)
         hp.Choice("disc_opt", ["sgd", "adam"], default="sgd")
         hp.Float("disc_lr", 5e-4, 0.1, default=1e-3, sampling="log")
+        hp.Fixed("disc_clipnorm", 10.0)
 
     def __init__(self, **kw):
         super().__init__(**kw)
@@ -34,6 +35,10 @@ class MIDisc(MI):
 
         # Optimizer.
         if self.hp.disc_opt == "adam":
-            self.disc_opt = tf.optimizers.Adam(self.hp.disc_lr)
+            self.disc_opt = tf.optimizers.Adam(
+                self.hp.disc_lr, clipnorm=self.hp.disc_clipnorm
+            )
         else:
-            self.disc_opt = tf.optimizers.SGD(self.hp.disc_lr)
+            self.disc_opt = tf.optimizers.SGD(
+                self.hp.disc_lr, clipnorm=self.hp.disc_clipnorm
+            )
