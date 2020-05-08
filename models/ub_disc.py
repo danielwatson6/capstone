@@ -35,7 +35,6 @@ class UBDisc(MIDisc):
         """Compute the KL[P_Y||Q_Y] term for negative samples."""
         raise NotImplementedError
 
-    @tf.function(input_signature=input_signature)
     def I(self, x, y=None, y_q=None, d=None):
         if y is None:
             y = self.enc.p_yGx_sample(x)
