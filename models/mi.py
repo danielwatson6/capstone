@@ -61,7 +61,6 @@ class MI(rf.Model):
         """Validation step."""
         raise NotImplementedError
 
-    @tf.function
     def train_loop(self, ds_train, ds_valid):
         while self.epoch < self.hp.epochs:
             for x in ds_train:

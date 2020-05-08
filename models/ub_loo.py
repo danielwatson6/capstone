@@ -31,3 +31,7 @@ class UB_LOO(MI):
         m_unnorm = tf.reduce_sum(conditionals, axis=1) - d
         m = m_unnorm / tf.cast(bs - 1, tf.float32)
         return tf.reduce_mean(tf.math.log(d / (m + self.hp.div_add)))
+
+    # Only used to avoid crashes for `create` CLI method.
+    def valid_step(self, x):
+        self.I(x)
