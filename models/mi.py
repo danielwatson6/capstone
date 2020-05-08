@@ -64,13 +64,18 @@ class MI(rf.Model):
     def train_loop(self, ds_train, ds_valid):
         while self.epoch < self.hp.epochs:
             for x in ds_train:
+                t0 = tf.timestamp()
                 if self._fix_enc:
                     train_loss, train_mi = self.train_step_fixed_enc(x)
                 else:
                     train_loss, train_mi = self.train_step(x)
+                t1 = tf.timestamp()
 
                 if self.step % 100 == 0:
                     valid_loss, valid_mi = self.valid_step(next(ds_valid))
+                    tf.print("step", self.step)
+                    tf.print("  train step time:", t1 - t0)
+                    tf.print("  valid mi:", valid_mi)
 
                     with self._train_writer.as_default():
                         tf.summary.scalar("loss", train_loss, step=self.step)

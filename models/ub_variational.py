@@ -6,7 +6,7 @@ from models import mi as MI
 
 
 @rf.export
-class UBDisc(MI):
+class UBVariational(MI):
     """Variational MI upper bounder."""
 
     def __init__(self, **kw):
