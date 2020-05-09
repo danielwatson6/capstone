@@ -6,8 +6,8 @@ source venv/bin/activate
 eval_trial () {
     batch_sizes=( 10 100 1000 10000 )
     for bs in "${batch_sizes[@]}"; do
-        printf "$model\t$trial\t$bs\t"
-        rf estimate -s $trial_path -m models.$model -d data_loaders.gaussian --batch_size $bs
+        printf "$2\t$3\t$bs\t"
+        rf estimate -s $1 -m models.$2 -d data_loaders.gaussian --batch_size $bs
     done
 }
 
@@ -20,6 +20,7 @@ for alpha_path in experiments/gaussians/*; do
 
     baseline_models=("lb_nce" "ub_loo")
     for model in "${baseline_models[@]}"; do
+        echo "evaluating $model"
         eval_trial $alpha_path/$model $model "n/a" >> $output_path
     done
 
@@ -33,6 +34,7 @@ for alpha_path in experiments/gaussians/*; do
                 continue
             fi
 
+            echo "evaluating $model"
             eval_trial $trial_path $model $trial >> $output_path
         done
     done
