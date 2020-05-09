@@ -78,38 +78,37 @@ class MI(rf.Model):
             tf.print(f"  {name}: {value}")
 
         ds_train, ds_valid = data_loader()
-        self._train_writer = self.make_summary_writer("train")
-        self._valid_writer = self.make_summary_writer("valid")
+        train_writer = self.make_summary_writer("train")
+        valid_writer = self.make_summary_writer("valid")
 
         # Build the model's weights.
         self.valid_step(next(ds_valid))
 
         while self.epoch < self.hp.epochs:
             for x in ds_train:
-                t0 = tf.timestamp()
                 if self._fix_enc:
                     train_loss, train_mi = self.train_step_fixed_enc(x)
                 else:
                     train_loss, train_mi = self.train_step(x)
-                t1 = tf.timestamp()
 
                 if self.step % 100 == 0:
                     valid_loss, valid_mi = self.valid_step(next(ds_valid))
-                    tf.print("step", self.step)
-                    tf.print("  train step time:", t1 - t0)
-                    tf.print("  valid mi:", valid_mi)
 
-                    with self._train_writer.as_default():
+                    with train_writer.as_default():
                         tf.summary.scalar("loss", train_loss, step=self.step)
                         tf.summary.scalar("mi", train_mi, step=self.step)
 
-                    with self._valid_writer.as_default():
+                    with valid_writer.as_default():
                         tf.summary.scalar("loss", valid_loss, step=self.step)
                         tf.summary.scalar("mi", valid_mi, step=self.step)
 
                 self.step.assign_add(1)
+
+            tf.print("epoch", self.epoch, "finished, saving...")
             self.epoch.assign_add(1)
             self.save()
+
+        self.save()
 
     @rf.cli
     def estimate(self, data_loader):
