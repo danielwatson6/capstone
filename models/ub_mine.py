@@ -1,12 +1,12 @@
 import researchflow as rf
 import tensorflow as tf
 
-from models import lb_disc as LBDisc
+from models import ub_disc as UBDisc
 
 
 @rf.export
-class LB_MINE(LBDisc):
-    """Donsker-Varadhan MI lower bounder."""
+class UB_NWJ(UBDisc):
+    """Nguyen-Wainwright-Jordan MI upper bounder."""
 
     @staticmethod
     def hparams(hp):
@@ -17,9 +17,9 @@ class LB_MINE(LBDisc):
         super().__init__(**kw)
         self.ema = tf.Variable(0.0, trainable=False)
 
-    def I_neg(self, xy):
+    def D_neg(self, y):
         if self.method != "train":
-            return -tf.math.log(tf.reduce_mean(self.T(xy)))
+            return -tf.math.log(tf.reduce_mean(self.T(y)))
 
         # Naive biased gradients look like this:
         #   d/dt -log (E_x T_t(x))
@@ -27,7 +27,7 @@ class LB_MINE(LBDisc):
         #
         # We want the gradient computation to yield this:
         # -d/dt (E_x T_t(x)) / EMA(E_x T_t(x))
-        e_t = tf.reduce_mean(self.T(xy))
+        e_t = tf.reduce_mean(self.T(y))
         if self.ema == 0:
             self.ema.assign(e_t)
         else:
