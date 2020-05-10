@@ -12,7 +12,7 @@ tune_gaussian () {
     rf create -s experiments/gaussians/alpha_$1/lb_nce -m models.lb_nce -d data_loaders.gaussian --gaussian=$1
     rf create -s experiments/gaussians/alpha_$1/ub_loo -m models.ub_loo -d data_loaders.gaussian --gaussian=$1
 
-    lb=("lb_dv" "lb_nwj")
+    lb=("lb_dv" "lb_nwj" "lb_mine")
     for model in "${lb[@]}"; do
         rf tune -s experiments/gaussians/alpha_$1/$model -m models.$model -d data_loaders.gaussian -t train -e estimate max -a bayes -f gaussian=$1 enc_activation var_eps encoder=../../encoder --max_trials 16
     done
