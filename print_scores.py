@@ -17,14 +17,18 @@ if __name__ == "__main__":
                 continue
 
             if model != current_model:
-                try:
-                    if model.startswith("ub"):
-                        best_score = min(current_scores)
-                    else:
-                        best_score = max(current_scores)
-                except ValueError:
-                    best_score = "nan"
-                scores.append((current_model, best_score))
+                if current_model is not None:
+                    print(current_model)
+                    for s in current_scores:
+                        print("  {:.4f}".format(s))
+                    try:
+                        if current_model.startswith("ub"):
+                            best_score = min(current_scores)
+                        else:
+                            best_score = max(current_scores)
+                    except ValueError:
+                        best_score = float("nan")
+                    scores.append((current_model, best_score))
 
                 current_model = model
                 current_scores = []
@@ -32,5 +36,18 @@ if __name__ == "__main__":
             if score != "nan":
                 current_scores.append(float(score))
 
+        print(current_model)
+        for s in current_scores:
+            print("  {:.4f}".format(s))
+        try:
+            if model.startswith("ub"):
+                best_score = min(current_scores)
+            else:
+                best_score = max(current_scores)
+        except ValueError:
+            best_score = float("nan")
+        scores.append((current_model, best_score))
+
+    print("\nBest scores:")
     for model, score in scores:
-        print(f"{model}\t{score}")
+        print("  {}\t{:.4f}".format(model, score))

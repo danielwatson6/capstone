@@ -17,7 +17,7 @@ tune_gaussian () {
         rf tune -s experiments/gaussians/alpha_$1/$model -m models.$model -d data_loaders.gaussian -t train -e estimate max -a bayes -f gaussian=$1 enc_activation var_eps encoder=../../encoder --max_trials 16
     done
 
-    ub=("ub_dv" "ub_nwj" "ub_variational")
+    ub=("ub_dv" "ub_nwj" "ub_mine" "ub_variational")
     for model in "${ub[@]}"; do
         rf tune -s experiments/gaussians/alpha_$1/$model -m models.$model -d data_loaders.gaussian -t train -e estimate min -a bayes -f gaussian=$1 enc_activation var_eps encoder=../../encoder --max_trials 16
     done
