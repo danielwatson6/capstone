@@ -5,12 +5,12 @@ from models import ub_disc as UBDisc
 
 
 @rf.export
-class UB_NWJ(UBDisc):
+class UB_MINE(UBDisc):
     """Nguyen-Wainwright-Jordan MI upper bounder."""
 
     @staticmethod
     def hparams(hp):
-        LBDisc.hparams(hp)
+        UBDisc.hparams(hp)
         hp.Float("decay_rate", 0.1, 0.9, default=0.5)
 
     def __init__(self, **kw):
