@@ -33,7 +33,7 @@ for alpha_path in experiments/gaussians/*; do
         eval_structured $alpha_path/$model $model $alpha  >> $output_path
     done
 
-    neural_models=("lb_dv" "lb_nwj" "ub_dv" "ub_nwj" "ub_variational")
+    neural_models=("lb_dv" "lb_nwj" "lb_mine" "ub_dv" "ub_nwj" "ub_mine" "ub_variational")
     for model in "${neural_models[@]}"; do
         for trial_path in $alpha_path/$model/*; do
             trial="${trial_path##*/}"
