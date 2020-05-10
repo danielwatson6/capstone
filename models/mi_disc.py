@@ -23,8 +23,6 @@ class MIDisc(MI):
     def __init__(self, **kw):
         super().__init__(**kw)
 
-        self.g = tf.Variable(1.0, trainable=False)
-
         # Discriminator neural network.
         self.T = tf.keras.Sequential()
         for _ in range(self.hp.disc_num_hidden):
