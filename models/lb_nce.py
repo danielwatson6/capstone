@@ -11,6 +11,11 @@ input_signature = (tf.TensorSpec(shape=[None, None], dtype=tf.float32),)
 class LB_NCE(MI):
     """Noise-contrastive estimation MI lower bounder."""
 
+    @staticmethod
+    def hparams(hp):
+        MI.hparams(hp)
+        hp.Fixed("div_add", 0.0)
+
     def I(self, x):
         # NOTE: we don't use `p_yGx_sample` because calls to `p_yGx` take the f(x) to
         # prevent extra encoder forward passes.
@@ -27,7 +32,7 @@ class LB_NCE(MI):
         d = tf.linalg.diag_part(conditionals)
         # [mean_j p(y1|xj), ..., mean_j p(yN|xj)]
         m = tf.reduce_mean(conditionals, axis=1)
-        return tf.reduce_mean(tf.math.log(d) - tf.math.log(m))
+        return tf.reduce_mean(tf.math.log(d / (m + self.hp.div_add)))
 
     @tf.function(input_signature=input_signature)
     def train_step(self, x):
