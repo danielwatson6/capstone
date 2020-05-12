@@ -62,9 +62,9 @@ class BinarizedMNIST(rf.DataLoader):
         ds = ds.shuffle(10000)
         ds = ds.batch(self.hp.batch_size)
         ds = ds.map(
-            lambda x: (
-                tf.reshape(tf.cast(x[0]["image"], tf.float32) / 255.0, [-1, 28 * 28]),
-                x[1],
+            lambda x, y: (
+                tf.reshape(tf.cast(x["image"], tf.float32) / 255.0, [-1, 28 * 28]),
+                y,
             )
         )
         return ds.prefetch(1)
