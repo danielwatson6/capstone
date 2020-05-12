@@ -58,7 +58,7 @@ class InfoMaxGAN(InfoMax):
 
     @tf.function(input_signature=input_signature)
     def train_step(self, x):
-        with tf.GradientTape(persistent=True):
+        with tf.GradientTape(persistent=True) as g:
             parts = self.loss_parts(x)
             enc_loss = parts[0] + parts[1]
             if self.hp.disc_iter:
