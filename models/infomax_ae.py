@@ -18,7 +18,7 @@ class InfoMaxAE(InfoMax):
 
     @staticmethod
     def hparams(hp):
-        MI.hparams(hp)
+        InfoMax.hparams(hp)
         hp.Fixed("dec_hidden_size", 1024)
         hp.Fixed("dec_num_hidden", 2)
         hp.Choice("dec_activation", ["tanh", "relu"], default="tanh")
