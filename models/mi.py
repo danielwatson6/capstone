@@ -28,6 +28,7 @@ class MI(rf.Model):
         encoder_save_dir = os.path.join(self.save_dir, "encoder")
         if self.hp.encoder:
             encoder_save_dir = os.path.join(self.save_dir, self.hp.encoder)
+            kw["hparams"] = None
         self.enc = Encoder(
             save_dir=os.path.join(encoder_save_dir), hparams=kw.get("hparams"),
         )
