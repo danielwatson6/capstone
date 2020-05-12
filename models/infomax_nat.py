@@ -4,12 +4,6 @@ import tensorflow as tf
 from models import infomax as InfoMax
 
 
-input_signature = (
-    tf.TensorSpec(shape=[None, None], dtype=tf.float32),
-    tf.TensorSpec(shape=[None, None], dtype=tf.float32),
-)
-
-
 def half_tanh(x):
     return 0.5 * tf.math.tanh(x)
 
@@ -30,7 +24,6 @@ class InfoMaxAE(InfoMax):
         y = self.enc.p_yGx_sample(x)
         return tf.reduce_mean((y - y_target) ** 2)
 
-    @tf.function(input_signature=input_signature)
     def train_step(self, xy):
         with tf.GradientTape() as g:
             loss = self.loss(xy)
