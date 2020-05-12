@@ -53,8 +53,7 @@ class InfoMaxGAN(InfoMax):
         return tf.reduce_mean(tf.math.log(self.T(y))), +tf.reduce_mean(log_y_random)
 
     def loss(self, x):
-        if parts is None:
-            parts = self.loss_parts(x)
+        parts = self.loss_parts(x)
         return parts[0] + parts[1]
 
     @tf.function(input_signature=input_signature)
