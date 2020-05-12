@@ -14,6 +14,7 @@ class MNIST(rf.DataLoader):
         hp.Fixed("macro", False)
 
     def __call__(self):
+        tf.random.set_seed(2020)
         ds_notest, ds_test = tfds.load(
             "mnist",
             split=["train", "test"],
@@ -37,7 +38,10 @@ class MNIST(rf.DataLoader):
             ds = ds.batch(self.hp.num_valid)
         else:
             ds = ds.batch(self.hp.batch_size)
+        # Flatten and normalize to [-.5, .5]
         ds = ds.map(
-            lambda x: tf.reshape(tf.cast(x["image"], tf.float32) / 255.0, [-1, 28 * 28])
+            lambda x: tf.reshape(
+                tf.cast(x["image"], tf.float32) / 255.0 - 0.5, [-1, 28 * 28]
+            )
         )
         return ds.prefetch(1)
