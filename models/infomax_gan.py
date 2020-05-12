@@ -72,7 +72,7 @@ class InfoMaxGAN(InfoMax):
         g_disc = g.gradient(disc_loss, self.T.trainable_weights)
         self.disc_opt.apply_gradients(zip(g_disc, self.T.trainable_weights))
         g_enc = g.gradient(enc_loss, self.enc.trainable_weights)
-        self.opt.apply_gradients(zip(g_enc, self.T.trainable_weights))
+        self.opt.apply_gradients(zip(g_enc, self.enc.trainable_weights))
         del g
         return enc_loss, -enc_loss
 
