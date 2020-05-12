@@ -69,5 +69,5 @@ class InfoMaxAE(InfoMax):
         return loss, -loss
 
     def valid_step(self, x):
-        loss = self.I(x)
+        loss = self.loss(x)
         return loss, -loss

@@ -39,6 +39,6 @@ class InfoMaxAE(InfoMax):
         self.opt.apply_gradients(zip(grads, self.trainable_weights))
         return loss, -loss
 
-    def valid_step(self, x):
-        loss = self.I(x)
+    def valid_step(self, xy):
+        loss = self.loss(xy)
         return loss, -loss
