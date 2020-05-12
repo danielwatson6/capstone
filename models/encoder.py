@@ -4,6 +4,10 @@ import tensorflow as tf
 from tensorflow.keras import layers as tfkl
 
 
+def half_tanh(x):
+    return 0.5 * tf.math.tanh(x)
+
+
 @rf.export
 class Encoder(rf.Model):
     """Encoder boilerplate."""
@@ -15,7 +19,7 @@ class Encoder(rf.Model):
         hp.Choice("enc_activation", ["tanh", "relu"], default="tanh")
         hp.Fixed("latent_size", 10)
         hp.Float("var_eps", 1e-3, 1.0, default=0.1, sampling="log")
-        hp.Float("gaussian", 0.0, 100.0, default=0.0)
+        hp.Fixed("gaussian", 0.0)
 
     def __init__(self, **kw):
         super().__init__(**kw)
@@ -43,7 +47,7 @@ class Encoder(rf.Model):
                 )
 
             # Constrain the output to a bounded domain to ensure MI is bounded above.
-            self.f.add(tfkl.Dense(self.hp.latent_size, activation=tf.math.tanh))
+            self.f.add(tfkl.Dense(self.hp.latent_size, activation=half_tanh))
 
         # Constant: H[ε].
         self.H_eps = (
