@@ -50,7 +50,7 @@ class InfoMaxGAN(InfoMax):
             log_y_random = -tf.math.log(self.T(y_random))
         else:
             log_y_random = tf.math.log(1.0 - self.T(y_random))
-        return tf.reduce_mean(tf.math.log(self.T(y))) + tf.reduce_mean(log_y_random)
+        return tf.reduce_mean(tf.math.log(self.T(y))), tf.reduce_mean(log_y_random)
 
     def loss(self, x):
         parts = self.loss_parts(x)
