@@ -5,6 +5,9 @@ import tensorflow.keras.layers as tfkl
 from models import infomax as InfoMax
 
 
+input_signature = (tf.TensorSpec(shape=[None, None], dtype=tf.float32),)
+
+
 def shifted_tanh(x):
     return tf.math.sigmoid(2.0 * x)
 
